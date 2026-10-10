@@ -1,0 +1,9 @@
+{
+  "name": "eta-landing-page",
+  "version": "1.0.0",
+  "description": "Product showcase and direct APK download landing page for Eta - Offline Smart Business Assistant",
+  "scripts": {
+    "start": "npx serve public"
+  }
+}
+
