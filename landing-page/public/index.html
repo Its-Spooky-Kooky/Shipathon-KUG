@@ -220,17 +220,24 @@
 
     /* Showcase Frame */
     .mockup-frame {
-      background: #FFFFFF;
+      background: #0B1120;
       border: 1px solid var(--border-darker);
-      border-radius: 28px;
-      padding: 12px;
-      box-shadow: var(--shadow-md);
+      border-radius: 24px;
+      padding: 10px;
+      box-shadow: 0 16px 36px rgba(11, 17, 32, 0.12);
+      max-height: 540px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .mockup-frame img {
       width: 100%;
-      height: auto;
-      border-radius: 18px;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      border-radius: 16px;
       display: block;
     }
 
