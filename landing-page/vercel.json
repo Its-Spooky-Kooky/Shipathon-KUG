@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "name": "eta-business-assistant",
   "cleanUrls": true,
   "trailingSlash": false,
+  "outputDirectory": "public",
   "headers": [
     {
       "source": "/(.*).apk",
