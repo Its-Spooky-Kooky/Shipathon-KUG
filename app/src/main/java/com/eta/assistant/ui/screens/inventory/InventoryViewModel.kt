@@ -92,6 +92,18 @@ class InventoryViewModel(
             repository.deleteProduct(product)
         }
     }
+
+    fun adjustStock(productId: Long, change: Double, reason: String = "RESTOCK") {
+        viewModelScope.launch {
+            repository.adjustProductStock(productId, change, reason)
+        }
+    }
+
+    fun updateProduct(product: ProductEntity) {
+        viewModelScope.launch {
+            repository.updateProduct(product)
+        }
+    }
 }
 
 class InventoryViewModelFactory(

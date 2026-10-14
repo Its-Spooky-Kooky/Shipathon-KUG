@@ -29,8 +29,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,6 +39,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,6 +68,7 @@ fun VoiceSaleScreen(
     onNavigateBack: () -> Unit,
     onNavigateToCustomers: () -> Unit,
     onNavigateToReports: () -> Unit,
+    onNavigateToManualSale: () -> Unit,
     onSaleRecorded: (Long) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -205,12 +208,34 @@ fun VoiceSaleScreen(
                         }
                     }
                 ) {
-                    Icon(Icons.Default.Send, "Send", tint = OrangePrimary)
+                    Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.Send, "Send", tint = OrangePrimary)
                 }
             },
             singleLine = true,
             shape = RoundedCornerShape(14.dp)
         )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = onNavigateToManualSale,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Default.ShoppingCart,
+                contentDescription = "Manual Cart",
+                modifier = Modifier.size(18.dp),
+                tint = OrangePrimary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Prefer manual entry? Open POS Cart",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
 
         // Parsed Action Card
         if (state.parsedIntent != null) {

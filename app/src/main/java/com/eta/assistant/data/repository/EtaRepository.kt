@@ -289,5 +289,16 @@ class EtaRepository(private val database: EtaDatabase) {
             expenseDao.insertExpense(ExpenseEntity(title = "Electricity", category = "Utilities", amount = 200.0, createdAt = now))
         }
     }
+
+    suspend fun clearAllData() {
+        database.withTransaction {
+            database.clearAllTables()
+        }
+    }
+
+    suspend fun resetAndSeedData() {
+        clearAllData()
+        seedDemoDataIfEmpty()
+    }
 }
 

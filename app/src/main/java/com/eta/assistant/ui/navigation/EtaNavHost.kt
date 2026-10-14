@@ -191,12 +191,12 @@ fun EtaNavHost(
                     DashboardScreen(
                         viewModel = dashboardViewModel,
                         onRecordSaleVoice = { navController.navigate(Screen.VoiceSale.route) },
+                        onRecordSaleManual = { navController.navigate(Screen.RecordSale.route) },
                         onAddProduct = { navController.navigate(Screen.AddProduct.route) },
                         onViewDues = { navController.navigate(Screen.Customers.route) },
                         onReports = { navController.navigate(Screen.Reports.route) },
                         onLowStockClick = { navController.navigate(Screen.LowStock.route) },
-                        onSyncClick = { navController.navigate(Screen.Sync.route) },
-                        onSaleClick = { /* Can show detail */ }
+                        onSyncClick = { navController.navigate(Screen.Sync.route) }
                     )
                 }
 
@@ -279,6 +279,7 @@ fun EtaNavHost(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToCustomers = { navController.navigate(Screen.Customers.route) },
                         onNavigateToReports = { navController.navigate(Screen.Reports.route) },
+                        onNavigateToManualSale = { navController.navigate(Screen.RecordSale.route) },
                         onSaleRecorded = {
                             navController.navigate(Screen.Dashboard.route) {
                                 popUpTo(Screen.Dashboard.route) { inclusive = true }
@@ -302,6 +303,7 @@ fun EtaNavHost(
                 composable(Screen.Sync.route) {
                     SyncScreen(
                         preferencesRepository = preferencesRepository,
+                        repository = repository,
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
@@ -309,6 +311,7 @@ fun EtaNavHost(
                 composable(Screen.Settings.route) {
                     SettingsScreen(
                         preferencesRepository = preferencesRepository,
+                        repository = repository,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToSync = { navController.navigate(Screen.Sync.route) },
                         onNavigateToPricing = { navController.navigate(Screen.Pricing.route) }

@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 
+import com.eta.assistant.data.local.entity.ExpenseEntity
+import kotlinx.coroutines.launch
+
 enum class ReportPeriod(val title: String, val days: Int) {
     TODAY("Today", 0),
     SEVEN_DAYS("7 Days", 7),
@@ -27,6 +30,7 @@ data class ReportsUiState(
     val totalDues: Double = 0.0,
     val transactionCount: Int = 0,
     val topSellingItems: List<TopProductSummary> = emptyList(),
+    val recentExpenses: List<ExpenseEntity> = emptyList(),
     val currencySymbol: String = "₹",
     val salesTrendBars: List<Float> = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 1.0f)
 )
@@ -45,6 +49,7 @@ class ReportsViewModel(
 
     private val _selectedPeriod = MutableStateFlow(ReportPeriod.TODAY)
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<ReportsUiState> = _selectedPeriod.flatMapLatest { period ->
         val startTime = if (period == ReportPeriod.TODAY) DateUtils.getStartOfDay() else DateUtils.getStartOfDaysAgo(period.days)
         val endTime = System.currentTimeMillis() + 86400000L
@@ -61,8 +66,9 @@ class ReportsViewModel(
         combine(
             financialsFlow,
             repository.getTopSellingProducts(startTime, endTime, 5),
+            repository.getAllExpenses(),
             preferencesRepository.userPreferencesFlow
-        ) { fin, topItems, prefs ->
+        ) { fin, topItems, expenses, prefs ->
             ReportsUiState(
                 selectedPeriod = period,
                 totalSales = fin.sales,
@@ -70,6 +76,7 @@ class ReportsViewModel(
                 totalDues = fin.dues,
                 transactionCount = fin.txCount,
                 topSellingItems = topItems,
+                recentExpenses = expenses.take(10),
                 currencySymbol = prefs.currencySymbol
             )
         }
@@ -81,6 +88,12 @@ class ReportsViewModel(
 
     fun selectPeriod(period: ReportPeriod) {
         _selectedPeriod.value = period
+    }
+
+    fun addExpense(title: String, category: String, amount: Double, notes: String = "") {
+        viewModelScope.launch {
+            repository.addExpense(title, category, amount, notes)
+        }
     }
 }
 

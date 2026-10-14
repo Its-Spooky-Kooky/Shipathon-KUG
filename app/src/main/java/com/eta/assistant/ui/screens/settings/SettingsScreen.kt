@@ -67,11 +67,19 @@ import com.eta.assistant.core.theme.SuccessGreen
 import com.eta.assistant.core.util.LocaleStrings
 import com.eta.assistant.core.util.NotificationHelper
 import com.eta.assistant.data.preferences.UserPreferencesRepository
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedTextField
+import com.eta.assistant.core.theme.ErrorRed
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
     preferencesRepository: UserPreferencesRepository,
+    repository: com.eta.assistant.data.repository.EtaRepository? = null,
     onNavigateBack: () -> Unit,
     onNavigateToSync: () -> Unit,
     onNavigateToPricing: () -> Unit
@@ -84,6 +92,10 @@ fun SettingsScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showNotificationDialog by remember { mutableStateOf(false) }
+    var showBusinessInfoDialog by remember { mutableStateOf(false) }
+    var showHelpDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -184,8 +196,8 @@ fun SettingsScreen(
                 SettingsRowItem(
                     icon = Icons.Default.Business,
                     title = LocaleStrings.get("business_info", lang),
-                    subtitle = prefs?.businessCategory ?: "Groceries",
-                    onClick = {}
+                    subtitle = "${prefs?.businessName ?: "My Store"} (${prefs?.businessCategory ?: "Groceries"})",
+                    onClick = { showBusinessInfoDialog = true }
                 )
 
                 SettingsRowItem(
@@ -229,14 +241,22 @@ fun SettingsScreen(
                 SettingsRowItem(
                     icon = Icons.AutoMirrored.Filled.Help,
                     title = "Help & Support",
-                    onClick = {}
+                    subtitle = "FAQs & User Guide",
+                    onClick = { showHelpDialog = true }
                 )
 
                 SettingsRowItem(
                     icon = Icons.Default.Info,
-                    title = "About",
-                    subtitle = "v1.0.0 (Eta MVP)",
-                    onClick = {}
+                    title = "About Eta",
+                    subtitle = "v1.0.0 (Native Offline Engine)",
+                    onClick = { showAboutDialog = true }
+                )
+
+                SettingsRowItem(
+                    icon = androidx.compose.material.icons.Icons.Default.RestartAlt,
+                    title = "Reset Application Data",
+                    subtitle = "Wipe and restore clean demo records",
+                    onClick = { showResetDialog = true }
                 )
             }
         }
@@ -285,6 +305,71 @@ fun SettingsScreen(
                     preferencesRepository.setThemeMode(mode)
                 }
                 showThemeDialog = false
+            }
+        )
+    }
+
+    // 4. Business Info Dialog
+    if (showBusinessInfoDialog) {
+        BusinessInfoDialog(
+            currentName = prefs?.businessName ?: "My Store",
+            currentOwner = prefs?.ownerName ?: "Store Owner",
+            currentCategory = prefs?.businessCategory ?: "Groceries",
+            onDismiss = { showBusinessInfoDialog = false },
+            onSave = { name, owner, category ->
+                scope.launch {
+                    preferencesRepository.updateBusinessInfo(name, owner, category)
+                }
+                showBusinessInfoDialog = false
+            }
+        )
+    }
+
+    // 5. Help & Support Dialog
+    if (showHelpDialog) {
+        HelpSupportDialog(
+            onDismiss = { showHelpDialog = false },
+            onContactEmail = {
+                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = Uri.parse("mailto:support@eta-assistant.com")
+                    putExtra(Intent.EXTRA_SUBJECT, "Eta App Support Request")
+                }
+                try {
+                    context.startActivity(Intent.createChooser(intent, "Contact Support"))
+                } catch (_: Exception) {}
+            }
+        )
+    }
+
+    // 6. About Dialog
+    if (showAboutDialog) {
+        AboutDialog(onDismiss = { showAboutDialog = false })
+    }
+
+    // 7. Reset Data Confirmation Dialog
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text("Reset Application Data?", fontWeight = FontWeight.Bold) },
+            text = { Text("This will permanently wipe all local customer dues, sales transactions, and custom stock, and restore clean sample records. This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            repository?.resetAndSeedData()
+                            preferencesRepository.clearAll()
+                            showResetDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
+                ) {
+                    Text("Yes, Reset Everything", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showResetDialog = false }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -564,6 +649,196 @@ private fun ThemeSelectionDialog(
                         )
                     }
                 }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)
+            ) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
+private fun BusinessInfoDialog(
+    currentName: String,
+    currentOwner: String,
+    currentCategory: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String, String) -> Unit
+) {
+    var businessName by remember { mutableStateOf(currentName) }
+    var ownerName by remember { mutableStateOf(currentOwner) }
+    var category by remember { mutableStateOf(currentCategory) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Business Profile", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = businessName,
+                    onValueChange = { businessName = it },
+                    label = { Text("Business / Store Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = ownerName,
+                    onValueChange = { ownerName = it },
+                    label = { Text("Owner Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Business Category") },
+                    placeholder = { Text("e.g. Groceries, Electronics, Apparel") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (businessName.isNotBlank() && ownerName.isNotBlank()) {
+                        onSave(businessName.trim(), ownerName.trim(), category.trim().ifBlank { "Groceries" })
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)
+            ) {
+                Text("Save Changes")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun HelpSupportDialog(
+    onDismiss: () -> Unit,
+    onContactEmail: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Help & User Guide", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Column {
+                    Text(text = "🎙️ How to use Voice Sales?", fontWeight = FontWeight.Bold, color = OrangePrimary)
+                    Text(
+                        text = "Tap the microphone on the Home screen and speak naturally in English, Hindi, Tamil, or Bengali (e.g. 'Sold 2 rice for 120 rupees to Ramesh'). Confirm the parsed items to instantly update stock and customer ledgers.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                HorizontalDivider()
+
+                Column {
+                    Text(text = "✈️ Does it work without internet?", fontWeight = FontWeight.Bold, color = OrangePrimary)
+                    Text(
+                        text = "Yes! Eta is completely local-first on Room SQLite. All inventory, customer debts, and sales work 100% offline with zero cloud downtime.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                HorizontalDivider()
+
+                Column {
+                    Text(text = "👥 How does Customer Credit work?", fontWeight = FontWeight.Bold, color = OrangePrimary)
+                    Text(
+                        text = "Select 'Credit (Udhar)' when saving a sale. Customer balances update automatically. You can view payment history and share payment reminder slips anytime.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                HorizontalDivider()
+
+                Button(
+                    onClick = onContactEmail,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = OrangePrimary.copy(alpha = 0.15f),
+                        contentColor = OrangePrimary
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Email Support (support@eta-assistant.com)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)
+            ) {
+                Text("Got it")
+            }
+        }
+    )
+}
+
+@Composable
+private fun AboutDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(OrangePrimary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("η", color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(text = "Eta Assistant", fontWeight = FontWeight.Bold)
+                    Text(text = "v1.0.0 (Release Build)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Eta is an offline-first smart business assistant built for small retail store owners and independent merchants.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "• Architecture: 100% Native Kotlin + Jetpack Compose Material 3\n• Local Engine: Room SQLite Database with atomic ACID transactions\n• Language Support: English, Hindi, Tamil, Bengali\n• Project: KUG Shipathon 2026",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         confirmButton = {

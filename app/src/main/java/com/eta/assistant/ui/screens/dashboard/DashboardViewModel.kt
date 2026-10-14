@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 data class DashboardUiState(
@@ -84,6 +85,17 @@ class DashboardViewModel(
             else -> "good_evening"
         }
         return com.eta.assistant.core.util.LocaleStrings.get(key, lang)
+    }
+
+    suspend fun getSaleWithItems(saleId: Long): com.eta.assistant.data.local.dao.SaleWithItems? {
+        return repository.getSaleWithItems(saleId)
+    }
+
+    fun cancelSale(saleId: Long, onDone: () -> Unit) {
+        viewModelScope.launch {
+            repository.cancelSale(saleId)
+            onDone()
+        }
     }
 }
 

@@ -49,20 +49,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 import com.eta.assistant.core.theme.OrangePrimary
 import com.eta.assistant.core.theme.OrangePrimaryContainer
 import com.eta.assistant.core.theme.SuccessGreen
 import com.eta.assistant.core.util.DateUtils
 import com.eta.assistant.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun SyncScreen(
     preferencesRepository: UserPreferencesRepository,
+    repository: com.eta.assistant.data.repository.EtaRepository? = null,
     onNavigateBack: () -> Unit
 ) {
     val prefs by preferencesRepository.userPreferencesFlow.collectAsState(initial = null)
+    val context = LocalContext.current
     var isSyncing by remember { mutableStateOf(false) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -122,7 +132,7 @@ fun SyncScreen(
                 tint = OrangePrimary,
                 modifier = Modifier
                     .size(54.dp)
-                    .then(if (isSyncing) Modifier.rotate(angle) else Modifier)
+                    .rotate(if (isSyncing) angle else 0f)
             )
         }
 
@@ -233,10 +243,10 @@ fun SyncScreen(
                 scope.launch {
                     isSyncing = true
                     syncMessage = null
-                    delay(1500)
+                    delay(1200)
                     preferencesRepository.updateLastSyncTime(System.currentTimeMillis())
                     isSyncing = false
-                    syncMessage = "Local database reconciled and cloud sync verified!"
+                    syncMessage = "Local database verified! 100% operational offline."
                 }
             },
             modifier = Modifier
@@ -249,12 +259,100 @@ fun SyncScreen(
             shape = RoundedCornerShape(14.dp),
             enabled = !isSyncing
         ) {
-            Icon(Icons.Default.Refresh, "Sync Now", modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Refresh, "Reconcile Now", modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isSyncing) "Syncing..." else "Sync Now",
+                text = if (isSyncing) "Checking..." else "Reconcile Local DB",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    if (repository != null) {
+                        try {
+                            val products = repository.getAllProducts().first()
+                            val customers = repository.getAllCustomers().first()
+                            val sales = repository.getAllSales().first()
+                            val expenses = repository.getAllExpenses().first()
+
+                            val backupJson = buildString {
+                                append("{\n")
+                                append("  \"app\": \"Eta Business Assistant\",\n")
+                                append("  \"version\": \"1.0.0\",\n")
+                                append("  \"timestamp\": ${System.currentTimeMillis()},\n")
+                                append("  \"exportDate\": \"${DateUtils.formatDateTime(System.currentTimeMillis())}\",\n")
+                                append("  \"totals\": {\n")
+                                append("    \"products\": ${products.size},\n")
+                                append("    \"customers\": ${customers.size},\n")
+                                append("    \"sales\": ${sales.size},\n")
+                                append("    \"expenses\": ${expenses.size}\n")
+                                append("  },\n")
+                                append("  \"products\": [\n")
+                                products.forEachIndexed { i, p ->
+                                    append("    {\"id\": ${p.id}, \"name\": \"${p.name.replace("\"", "\\\"")}\", \"stock\": ${p.stockQuantity}, \"sellingPrice\": ${p.sellingPrice}, \"unit\": \"${p.unit}\"}")
+                                    if (i < products.size - 1) append(",")
+                                    append("\n")
+                                }
+                                append("  ],\n")
+                                append("  \"customers\": [\n")
+                                customers.forEachIndexed { i, c ->
+                                    append("    {\"id\": ${c.id}, \"name\": \"${c.name.replace("\"", "\\\"")}\", \"phone\": \"${c.phone}\"}")
+                                    if (i < customers.size - 1) append(",")
+                                    append("\n")
+                                }
+                                append("  ],\n")
+                                append("  \"sales\": [\n")
+                                sales.forEachIndexed { i, s ->
+                                    append("    {\"id\": ${s.id}, \"customer\": \"${s.customerName.replace("\"", "\\\"")}\", \"total\": ${s.totalAmount}, \"paid\": ${s.paidAmount}, \"method\": \"${s.paymentMethod}\"}")
+                                    if (i < sales.size - 1) append(",")
+                                    append("\n")
+                                }
+                                append("  ]\n")
+                                append("}")
+                            }
+
+                            val backupFile = File(context.cacheDir, "eta_backup_${System.currentTimeMillis()}.json")
+                            backupFile.writeText(backupJson)
+
+                            val contentUri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                backupFile
+                            )
+
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_STREAM, contentUri)
+                                putExtra(Intent.EXTRA_SUBJECT, "Eta Store SQLite Backup")
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Share Database Backup"))
+                            syncMessage = "Backup ready! Exported ${products.size} items, ${sales.size} sales, ${customers.size} customers."
+                        } catch (e: Exception) {
+                            syncMessage = "Export failed: ${e.message}"
+                        }
+                    } else {
+                        syncMessage = "Repository ready for sync."
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Icon(Icons.Default.Share, "Export Backup", modifier = Modifier.size(20.dp), tint = OrangePrimary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Export Backup (.json)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 

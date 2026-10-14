@@ -17,54 +17,79 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.content.Intent
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.eta.assistant.core.theme.ErrorRed
 import com.eta.assistant.core.theme.OrangePrimary
 import com.eta.assistant.core.theme.OrangePrimaryContainer
 import com.eta.assistant.core.theme.SuccessGreen
 import com.eta.assistant.core.theme.WarningAmber
 import com.eta.assistant.core.util.CurrencyFormatter
 import com.eta.assistant.core.util.DateUtils
+import com.eta.assistant.data.local.dao.SaleWithItems
 import com.eta.assistant.data.local.entity.SaleEntity
+import kotlinx.coroutines.launch
 
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
     onRecordSaleVoice: () -> Unit,
+    onRecordSaleManual: () -> Unit,
     onAddProduct: () -> Unit,
     onViewDues: () -> Unit,
     onReports: () -> Unit,
     onLowStockClick: () -> Unit,
     onSyncClick: () -> Unit,
-    onSaleClick: (Long) -> Unit
+    onSaleClick: (Long) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var selectedSaleWithItems by remember { mutableStateOf<SaleWithItems?>(null) }
+    var showReceiptDialog by remember { mutableStateOf(false) }
+    var showCancelConfirmDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -216,6 +241,7 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Row 1: Voice Sale & Manual Sale
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -230,23 +256,38 @@ fun DashboardScreen(
 
                     QuickActionCard(
                         modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Add,
-                        title = com.eta.assistant.core.util.LocaleStrings.get("add_product", state.languageCode),
-                        onClick = onAddProduct
+                        icon = Icons.Default.PointOfSale,
+                        title = "New Sale (Manual)",
+                        isHighlighted = false,
+                        onClick = onRecordSaleManual
                     )
                 }
 
+                // Row 2: Add Product & View Dues
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     QuickActionCard(
                         modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Add,
+                        title = com.eta.assistant.core.util.LocaleStrings.get("add_product", state.languageCode),
+                        onClick = onAddProduct
+                    )
+
+                    QuickActionCard(
+                        modifier = Modifier.weight(1f),
                         icon = Icons.Default.People,
                         title = com.eta.assistant.core.util.LocaleStrings.get("view_dues", state.languageCode),
                         onClick = onViewDues
                     )
+                }
 
+                // Row 3: Reports
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     QuickActionCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Assessment,
@@ -300,7 +341,13 @@ fun DashboardScreen(
                 RecentSaleItem(
                     sale = sale,
                     currency = state.currencySymbol,
-                    onClick = { onSaleClick(sale.id) }
+                    onClick = {
+                        onSaleClick(sale.id)
+                        scope.launch {
+                            selectedSaleWithItems = viewModel.getSaleWithItems(sale.id)
+                            showReceiptDialog = true
+                        }
+                    }
                 )
             }
         }
@@ -308,6 +355,202 @@ fun DashboardScreen(
         item {
             Spacer(modifier = Modifier.height(80.dp))
         }
+    }
+
+    // Receipt Modal Dialog
+    if (showReceiptDialog && selectedSaleWithItems != null) {
+        val saleDetails = selectedSaleWithItems!!
+        val isCancelled = saleDetails.sale.status == "CANCELLED"
+        val remainingDue = saleDetails.sale.totalAmount - saleDetails.sale.paidAmount
+
+        AlertDialog(
+            onDismissRequest = { showReceiptDialog = false },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Receipt #${saleDetails.sale.id}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isCancelled) ErrorRed.copy(alpha = 0.15f)
+                                else if (remainingDue <= 0.0) SuccessGreen.copy(alpha = 0.15f)
+                                else WarningAmber.copy(alpha = 0.15f)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = if (isCancelled) "CANCELLED" else if (remainingDue <= 0.0) "PAID" else "CREDIT DUE",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCancelled) ErrorRed else if (remainingDue <= 0.0) SuccessGreen else WarningAmber
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Customer: ${saleDetails.sale.customerName}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Date: ${DateUtils.formatDateTime(saleDetails.sale.createdAt)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Payment Mode: ${saleDetails.sale.paymentMethod}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                    Text(
+                        text = "Items Sold:",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    saleDetails.items.forEach { item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "${item.productName} (${item.quantity.toInt()}x)",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = CurrencyFormatter.format(item.subtotal, state.currencySymbol),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "Total Amount", fontWeight = FontWeight.Bold)
+                        Text(
+                            text = CurrencyFormatter.format(saleDetails.sale.totalAmount, state.currencySymbol),
+                            fontWeight = FontWeight.Bold,
+                            color = OrangePrimary
+                        )
+                    }
+
+                    if (remainingDue > 0.0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "Balance Due", color = ErrorRed, style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                text = CurrencyFormatter.format(remainingDue, state.currencySymbol),
+                                color = ErrorRed,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            val receiptText = buildString {
+                                append("🧾 Receipt from ${state.businessName}\n")
+                                append("Receipt #: ${saleDetails.sale.id}\n")
+                                append("Date: ${DateUtils.formatDateTime(saleDetails.sale.createdAt)}\n")
+                                append("Customer: ${saleDetails.sale.customerName}\n")
+                                append("----------------------------\n")
+                                saleDetails.items.forEach { item ->
+                                    append("${item.productName} x ${item.quantity.toInt()} = ${CurrencyFormatter.format(item.subtotal, state.currencySymbol)}\n")
+                                }
+                                append("----------------------------\n")
+                                append("Total: ${CurrencyFormatter.format(saleDetails.sale.totalAmount, state.currencySymbol)}\n")
+                                append("Paid: ${CurrencyFormatter.format(saleDetails.sale.paidAmount, state.currencySymbol)}\n")
+                                if (remainingDue > 0) {
+                                    append("Due Balance: ${CurrencyFormatter.format(remainingDue, state.currencySymbol)}\n")
+                                }
+                                append("Payment Mode: ${saleDetails.sale.paymentMethod}\n\n")
+                                append("Thank you for shopping with us!")
+                            }
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, receiptText)
+                                type = "text/plain"
+                            }
+                            context.startActivity(Intent.createChooser(sendIntent, "Share Receipt"))
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Share")
+                    }
+
+                    if (!isCancelled) {
+                        OutlinedButton(
+                            onClick = { showCancelConfirmDialog = true },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
+                        ) {
+                            Text("Refund")
+                        }
+                    }
+
+                    OutlinedButton(onClick = { showReceiptDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            }
+        )
+    }
+
+    if (showCancelConfirmDialog && selectedSaleWithItems != null) {
+        AlertDialog(
+            onDismissRequest = { showCancelConfirmDialog = false },
+            title = { Text("Confirm Refund / Cancellation") },
+            text = { Text("Are you sure you want to cancel Receipt #${selectedSaleWithItems!!.sale.id}? This will restore all item quantities back to your inventory stock.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.cancelSale(selectedSaleWithItems!!.sale.id) {
+                            showCancelConfirmDialog = false
+                            showReceiptDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
+                ) {
+                    Text("Yes, Refund")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showCancelConfirmDialog = false }) {
+                    Text("No, Keep")
+                }
+            }
+        )
     }
 }
 
