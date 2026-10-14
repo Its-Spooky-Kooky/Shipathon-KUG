@@ -43,6 +43,12 @@ abstract class EtaDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: EtaDatabase? = null
 
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Future schema changes will be safely applied here without data loss
+            }
+        }
+
         fun getDatabase(context: Context): EtaDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -50,7 +56,8 @@ abstract class EtaDatabase : RoomDatabase() {
                     EtaDatabase::class.java,
                     "eta_business.db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2)
+                    .fallbackToDestructiveMigrationOnDowngrade()
                     .build()
                 INSTANCE = instance
                 instance

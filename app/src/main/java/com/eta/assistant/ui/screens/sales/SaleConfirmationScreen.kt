@@ -32,7 +32,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import com.eta.assistant.core.util.UpiPaymentCard
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -220,6 +222,41 @@ fun SaleConfirmationScreen(
                             }
                         }
 
+                        // Amount Paid Now (Partial Payment Support)
+                        if (state.selectedCustomer != null) {
+                            val currentPaid = state.customPaidAmount ?: if (state.paymentMode == "CREDIT") 0.0 else state.totalAmount
+                            val remainingDue = (state.totalAmount - currentPaid).coerceAtLeast(0.0)
+
+                            Column {
+                                Text(
+                                    text = "Amount Paid Now",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                OutlinedTextField(
+                                    value = if (state.customPaidAmount != null) state.customPaidAmount.toString() else if (state.paymentMode == "CREDIT") "0.0" else state.totalAmount.toString(),
+                                    onValueChange = { input ->
+                                        val amt = input.toDoubleOrNull()
+                                        viewModel.setCustomPaidAmount(amt)
+                                    },
+                                    label = { Text("Paid Amount (${state.currencySymbol})") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                if (remainingDue > 0) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Remaining Due to Khata: ${CurrencyFormatter.format(remainingDue, state.currencySymbol)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = OrangePrimary,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+
                         // Date & Time Row
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -244,6 +281,19 @@ fun SaleConfirmationScreen(
                             }
                         }
                     }
+                }
+            }
+
+            if (state.paymentMode == "UPI") {
+                item {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    val payableAmount = state.customPaidAmount ?: state.totalAmount
+                    UpiPaymentCard(
+                        upiId = state.merchantUpiId,
+                        businessName = state.businessName,
+                        amount = payableAmount,
+                        currencySymbol = state.currencySymbol
+                    )
                 }
             }
         }

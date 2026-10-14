@@ -315,10 +315,11 @@ fun SettingsScreen(
             currentName = prefs?.businessName ?: "My Store",
             currentOwner = prefs?.ownerName ?: "Store Owner",
             currentCategory = prefs?.businessCategory ?: "Groceries",
+            currentUpi = prefs?.merchantUpiId ?: "ravistore@upi",
             onDismiss = { showBusinessInfoDialog = false },
-            onSave = { name, owner, category ->
+            onSave = { name, owner, category, upiId ->
                 scope.launch {
-                    preferencesRepository.updateBusinessInfo(name, owner, category)
+                    preferencesRepository.updateBusinessInfo(name, owner, category, upiId)
                 }
                 showBusinessInfoDialog = false
             }
@@ -667,12 +668,14 @@ private fun BusinessInfoDialog(
     currentName: String,
     currentOwner: String,
     currentCategory: String,
+    currentUpi: String = "ravistore@upi",
     onDismiss: () -> Unit,
-    onSave: (String, String, String) -> Unit
+    onSave: (String, String, String, String) -> Unit
 ) {
     var businessName by remember { mutableStateOf(currentName) }
     var ownerName by remember { mutableStateOf(currentOwner) }
     var category by remember { mutableStateOf(currentCategory) }
+    var merchantUpiId by remember { mutableStateOf(currentUpi) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -709,13 +712,28 @@ private fun BusinessInfoDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp)
                 )
+
+                OutlinedTextField(
+                    value = merchantUpiId,
+                    onValueChange = { merchantUpiId = it },
+                    label = { Text("Merchant UPI ID (for QR & WhatsApp)") },
+                    placeholder = { Text("e.g. store@upi or mobile@upi") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     if (businessName.isNotBlank() && ownerName.isNotBlank()) {
-                        onSave(businessName.trim(), ownerName.trim(), category.trim().ifBlank { "Groceries" })
+                        onSave(
+                            businessName.trim(),
+                            ownerName.trim(),
+                            category.trim().ifBlank { "Groceries" },
+                            merchantUpiId.trim().ifBlank { "ravistore@upi" }
+                        )
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)

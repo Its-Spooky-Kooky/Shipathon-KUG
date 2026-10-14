@@ -13,6 +13,9 @@ interface ExpenseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: ExpenseEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(expenses: List<ExpenseEntity>)
+
     @Query("SELECT * FROM expenses ORDER BY createdAt DESC")
     fun getAllExpenses(): Flow<List<ExpenseEntity>>
 

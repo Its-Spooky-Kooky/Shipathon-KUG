@@ -71,4 +71,47 @@ class VoiceCommandParserTest {
         val result = VoiceCommandParser.parse("सबसे ज्यादा बिकने वाला")
         assertTrue(result is ParsedIntent.ShowTopSelling)
     }
+
+    @Test
+    fun testHindiSovCommand() {
+        val result = VoiceCommandParser.parse("500 rupay ki chini Ramesh ke khate mein likh do")
+        assertTrue(result is ParsedIntent.RecordSale)
+        val sale = result as ParsedIntent.RecordSale
+        assertEquals("Ramesh", sale.customerName)
+        assertEquals("chini", sale.productName)
+        assertEquals(500.0, sale.amount ?: 0.0, 0.001)
+        assertTrue(sale.isCredit)
+    }
+
+    @Test
+    fun testCustomerFirstCreditCommand() {
+        val result = VoiceCommandParser.parse("Ramesh 2 kg rice udhaar")
+        assertTrue(result is ParsedIntent.RecordSale)
+        val sale = result as ParsedIntent.RecordSale
+        assertEquals("Ramesh", sale.customerName)
+        assertEquals("rice", sale.productName)
+        assertEquals(2.0, sale.quantity, 0.001)
+        assertTrue(sale.isCredit)
+    }
+
+    @Test
+    fun testCustomerFirstAmountCommand() {
+        val result = VoiceCommandParser.parse("Ramesh 2 kg chini 100 rupay")
+        assertTrue(result is ParsedIntent.RecordSale)
+        val sale = result as ParsedIntent.RecordSale
+        assertEquals("Ramesh", sale.customerName)
+        assertEquals("chini", sale.productName)
+        assertEquals(2.0, sale.quantity, 0.001)
+        assertEquals(100.0, sale.amount ?: 0.0, 0.001)
+        org.junit.Assert.assertFalse(sale.isCredit)
+    }
+
+    @Test
+    fun testSimpleAmountCustomerCommand() {
+        val result = VoiceCommandParser.parse("₹500 Ramesh")
+        assertTrue(result is ParsedIntent.RecordSale)
+        val sale = result as ParsedIntent.RecordSale
+        assertEquals("Ramesh", sale.customerName)
+        assertEquals(500.0, sale.amount ?: 0.0, 0.001)
+    }
 }

@@ -23,7 +23,8 @@ data class UserPreferences(
     val notificationsEnabled: Boolean,
     val subscriptionPlan: String, // "FREE", "PLUS", "BUSINESS"
     val isOnboarded: Boolean,
-    val lastSyncTimestamp: Long
+    val lastSyncTimestamp: Long,
+    val merchantUpiId: String = "ravistore@upi"
 )
 
 class UserPreferencesRepository(private val context: Context) {
@@ -40,6 +41,7 @@ class UserPreferencesRepository(private val context: Context) {
         val SUBSCRIPTION_PLAN = stringPreferencesKey("subscription_plan")
         val IS_ONBOARDED = booleanPreferencesKey("is_onboarded")
         val LAST_SYNC_TIMESTAMP = longPreferencesKey("last_sync_timestamp")
+        val MERCHANT_UPI_ID = stringPreferencesKey("merchant_upi_id")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data.map { preferences ->
@@ -54,7 +56,8 @@ class UserPreferencesRepository(private val context: Context) {
             notificationsEnabled = preferences[PreferencesKeys.NOTIFICATIONS_ENABLED] ?: true,
             subscriptionPlan = preferences[PreferencesKeys.SUBSCRIPTION_PLAN] ?: "FREE",
             isOnboarded = preferences[PreferencesKeys.IS_ONBOARDED] ?: false,
-            lastSyncTimestamp = preferences[PreferencesKeys.LAST_SYNC_TIMESTAMP] ?: System.currentTimeMillis()
+            lastSyncTimestamp = preferences[PreferencesKeys.LAST_SYNC_TIMESTAMP] ?: System.currentTimeMillis(),
+            merchantUpiId = preferences[PreferencesKeys.MERCHANT_UPI_ID] ?: "ravistore@upi"
         )
     }
 
@@ -99,11 +102,18 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
-    suspend fun updateBusinessInfo(businessName: String, ownerName: String, category: String) {
+    suspend fun updateBusinessInfo(businessName: String, ownerName: String, category: String, merchantUpiId: String = "ravistore@upi") {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.BUSINESS_NAME] = businessName
             preferences[PreferencesKeys.OWNER_NAME] = ownerName
             preferences[PreferencesKeys.BUSINESS_CATEGORY] = category
+            preferences[PreferencesKeys.MERCHANT_UPI_ID] = merchantUpiId
+        }
+    }
+
+    suspend fun setMerchantUpiId(upiId: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.MERCHANT_UPI_ID] = upiId
         }
     }
 

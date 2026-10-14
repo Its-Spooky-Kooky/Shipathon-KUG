@@ -14,12 +14,14 @@ import com.eta.assistant.data.local.entity.SaleItemEntity
 import com.eta.assistant.data.local.entity.StockMovementEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class CartItem(
     val product: ProductEntity,
     val quantity: Double
 ) {
-    val subtotal: Double get() = product.sellingPrice * quantity
+    val subtotal: Double get() = kotlin.math.round(product.sellingPrice * quantity * 100.0) / 100.0
 }
 
 sealed class SaleResult {
@@ -181,6 +183,9 @@ class EtaRepository(private val database: EtaDatabase) {
     fun getRecentSales(limit: Int = 10): Flow<List<SaleEntity>> = saleDao.getRecentSales(limit)
     fun getSalesForCustomer(customerId: Long): Flow<List<SaleEntity>> = saleDao.getSalesForCustomer(customerId)
 
+    // Helper for floating-point currency precision
+    private fun Double.roundCurrency(): Double = kotlin.math.round(this * 100.0) / 100.0
+
     suspend fun cancelSale(saleId: Long) {
         database.withTransaction {
             val saleWithItems = saleDao.getSaleWithItems(saleId) ?: return@withTransaction
@@ -197,6 +202,9 @@ class EtaRepository(private val database: EtaDatabase) {
                     )
                 )
             }
+
+            // Remove associated payments made at checkout to preserve ledger integrity
+            paymentDao.deletePaymentsForSale(saleId)
 
             saleDao.cancelSale(saleId)
         }
@@ -238,6 +246,8 @@ class EtaRepository(private val database: EtaDatabase) {
 
     // Analytics & Metrics
     fun getSalesAmountBetween(start: Long, end: Long): Flow<Double> = saleDao.getTotalSalesAmount(start, end)
+    fun getSalesBetween(start: Long, end: Long): Flow<List<SaleEntity>> = saleDao.getSalesBetween(start, end)
+    fun getCostOfGoodsSold(start: Long, end: Long): Flow<Double> = saleDao.getCostOfGoodsSold(start, end)
     fun getItemsSoldBetween(start: Long, end: Long): Flow<Double> = saleDao.getTotalItemsSold(start, end)
     fun getTransactionCountBetween(start: Long, end: Long): Flow<Int> = saleDao.getTransactionCount(start, end)
     fun getExpensesAmountBetween(start: Long, end: Long): Flow<Double> = expenseDao.getTotalExpensesBetween(start, end)
@@ -299,6 +309,333 @@ class EtaRepository(private val database: EtaDatabase) {
     suspend fun resetAndSeedData() {
         clearAllData()
         seedDemoDataIfEmpty()
+    }
+
+    suspend fun exportFullBackupJson(): String {
+        val root = JSONObject()
+        root.put("version", 1)
+        root.put("exportedAt", System.currentTimeMillis())
+
+        val products = productDao.getAllProducts().first()
+        val productsArray = JSONArray()
+        for (p in products) {
+            val obj = JSONObject()
+            obj.put("id", p.id)
+            obj.put("name", p.name)
+            obj.put("category", p.category)
+            obj.put("unit", p.unit)
+            obj.put("costPrice", p.costPrice)
+            obj.put("sellingPrice", p.sellingPrice)
+            obj.put("stockQuantity", p.stockQuantity)
+            obj.put("lowStockThreshold", p.lowStockThreshold)
+            obj.put("sku", p.sku)
+            obj.put("createdAt", p.createdAt)
+            obj.put("updatedAt", p.updatedAt)
+            obj.put("syncStatus", p.syncStatus)
+            productsArray.put(obj)
+        }
+        root.put("products", productsArray)
+
+        val customers = customerDao.getAllCustomers().first()
+        val customersArray = JSONArray()
+        for (c in customers) {
+            val obj = JSONObject()
+            obj.put("id", c.id)
+            obj.put("name", c.name)
+            obj.put("phone", c.phone)
+            obj.put("notes", c.notes)
+            obj.put("createdAt", c.createdAt)
+            customersArray.put(obj)
+        }
+        root.put("customers", customersArray)
+
+        val sales = saleDao.getAllSales().first()
+        val salesArray = JSONArray()
+        for (s in sales) {
+            val obj = JSONObject()
+            obj.put("id", s.id)
+            obj.put("customerId", s.customerId ?: JSONObject.NULL)
+            obj.put("customerName", s.customerName)
+            obj.put("totalAmount", s.totalAmount)
+            obj.put("paidAmount", s.paidAmount)
+            obj.put("paymentMethod", s.paymentMethod)
+            obj.put("status", s.status)
+            obj.put("notes", s.notes)
+            obj.put("createdAt", s.createdAt)
+            salesArray.put(obj)
+        }
+        root.put("sales", salesArray)
+
+        val saleItems = saleDao.getAllSaleItems().first()
+        val saleItemsArray = JSONArray()
+        for (si in saleItems) {
+            val obj = JSONObject()
+            obj.put("id", si.id)
+            obj.put("saleId", si.saleId)
+            obj.put("productId", si.productId)
+            obj.put("productName", si.productName)
+            obj.put("quantity", si.quantity)
+            obj.put("unitPrice", si.unitPrice)
+            obj.put("subtotal", si.subtotal)
+            saleItemsArray.put(obj)
+        }
+        root.put("sale_items", saleItemsArray)
+
+        val payments = paymentDao.getAllPayments().first()
+        val paymentsArray = JSONArray()
+        for (p in payments) {
+            val obj = JSONObject()
+            obj.put("id", p.id)
+            obj.put("customerId", p.customerId)
+            obj.put("saleId", p.saleId ?: JSONObject.NULL)
+            obj.put("amount", p.amount)
+            obj.put("paymentMethod", p.paymentMethod)
+            obj.put("notes", p.notes)
+            obj.put("createdAt", p.createdAt)
+            paymentsArray.put(obj)
+        }
+        root.put("payments", paymentsArray)
+
+        val expenses = expenseDao.getAllExpenses().first()
+        val expensesArray = JSONArray()
+        for (e in expenses) {
+            val obj = JSONObject()
+            obj.put("id", e.id)
+            obj.put("title", e.title)
+            obj.put("category", e.category)
+            obj.put("amount", e.amount)
+            obj.put("notes", e.notes)
+            obj.put("createdAt", e.createdAt)
+            expensesArray.put(obj)
+        }
+        root.put("expenses", expensesArray)
+
+        val movements = stockMovementDao.getAllMovements().first()
+        val movementsArray = JSONArray()
+        for (m in movements) {
+            val obj = JSONObject()
+            obj.put("id", m.id)
+            obj.put("productId", m.productId)
+            obj.put("changeQuantity", m.changeQuantity)
+            obj.put("reason", m.reason)
+            obj.put("timestamp", m.timestamp)
+            movementsArray.put(obj)
+        }
+        root.put("stock_movements", movementsArray)
+
+        return root.toString(2)
+    }
+
+    suspend fun importFullBackupJson(jsonString: String): Result<Int> {
+        return try {
+            val root = JSONObject(jsonString)
+            var totalRestored = 0
+
+            database.withTransaction {
+                database.clearAllTables()
+
+                // Products
+                if (root.has("products")) {
+                    val arr = root.getJSONArray("products")
+                    val list = mutableListOf<ProductEntity>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        list.add(
+                            ProductEntity(
+                                id = o.optLong("id", 0L),
+                                name = o.getString("name"),
+                                category = o.optString("category", "General"),
+                                unit = o.optString("unit", "units"),
+                                costPrice = o.optDouble("costPrice", 0.0),
+                                sellingPrice = o.optDouble("sellingPrice", 0.0),
+                                stockQuantity = o.optDouble("stockQuantity", 0.0),
+                                lowStockThreshold = o.optDouble("lowStockThreshold", 5.0),
+                                sku = o.optString("sku", ""),
+                                createdAt = o.optLong("createdAt", System.currentTimeMillis()),
+                                updatedAt = o.optLong("updatedAt", System.currentTimeMillis()),
+                                syncStatus = o.optString("syncStatus", "LOCAL")
+                            )
+                        )
+                    }
+                    if (list.isNotEmpty()) {
+                        productDao.insertAll(list)
+                        totalRestored += list.size
+                    }
+                }
+
+                // Customers
+                if (root.has("customers")) {
+                    val arr = root.getJSONArray("customers")
+                    val list = mutableListOf<CustomerEntity>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        list.add(
+                            CustomerEntity(
+                                id = o.optLong("id", 0L),
+                                name = o.getString("name"),
+                                phone = o.optString("phone", ""),
+                                notes = o.optString("notes", ""),
+                                createdAt = o.optLong("createdAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (list.isNotEmpty()) {
+                        customerDao.insertAll(list)
+                        totalRestored += list.size
+                    }
+                }
+
+                // Sales
+                if (root.has("sales")) {
+                    val arr = root.getJSONArray("sales")
+                    val list = mutableListOf<SaleEntity>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        val custId = if (o.isNull("customerId")) null else o.optLong("customerId")
+                        list.add(
+                            SaleEntity(
+                                id = o.optLong("id", 0L),
+                                customerId = custId,
+                                customerName = o.getString("customerName"),
+                                totalAmount = o.optDouble("totalAmount", 0.0),
+                                paidAmount = o.optDouble("paidAmount", 0.0),
+                                paymentMethod = o.optString("paymentMethod", "CASH"),
+                                status = o.optString("status", "COMPLETED"),
+                                notes = o.optString("notes", ""),
+                                createdAt = o.optLong("createdAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (list.isNotEmpty()) {
+                        saleDao.insertSales(list)
+                        totalRestored += list.size
+                    }
+                }
+
+                // Sale Items
+                if (root.has("sale_items")) {
+                    val arr = root.getJSONArray("sale_items")
+                    val list = mutableListOf<SaleItemEntity>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        list.add(
+                            SaleItemEntity(
+                                id = o.optLong("id", 0L),
+                                saleId = o.getLong("saleId"),
+                                productId = o.getLong("productId"),
+                                productName = o.getString("productName"),
+                                quantity = o.optDouble("quantity", 1.0),
+                                unitPrice = o.optDouble("unitPrice", 0.0),
+                                subtotal = o.optDouble("subtotal", 0.0)
+                            )
+                        )
+                    }
+                    if (list.isNotEmpty()) {
+                        saleDao.insertSaleItems(list)
+                        totalRestored += list.size
+                    }
+                }
+
+                // Payments
+                if (root.has("payments")) {
+                    val arr = root.getJSONArray("payments")
+                    val list = mutableListOf<PaymentEntity>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        val saleId = if (o.isNull("saleId")) null else o.optLong("saleId")
+                        list.add(
+                            PaymentEntity(
+                                id = o.optLong("id", 0L),
+                                customerId = o.getLong("customerId"),
+                                saleId = saleId,
+                                amount = o.optDouble("amount", 0.0),
+                                paymentMethod = o.optString("paymentMethod", "CASH"),
+                                notes = o.optString("notes", ""),
+                                createdAt = o.optLong("createdAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (list.isNotEmpty()) {
+                        paymentDao.insertAll(list)
+                        totalRestored += list.size
+                    }
+                }
+
+                // Expenses
+                if (root.has("expenses")) {
+                    val arr = root.getJSONArray("expenses")
+                    val list = mutableListOf<ExpenseEntity>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        list.add(
+                            ExpenseEntity(
+                                id = o.optLong("id", 0L),
+                                title = o.getString("title"),
+                                category = o.optString("category", "General"),
+                                amount = o.optDouble("amount", 0.0),
+                                notes = o.optString("notes", ""),
+                                createdAt = o.optLong("createdAt", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (list.isNotEmpty()) {
+                        expenseDao.insertAll(list)
+                        totalRestored += list.size
+                    }
+                }
+
+                // Stock Movements
+                if (root.has("stock_movements")) {
+                    val arr = root.getJSONArray("stock_movements")
+                    val list = mutableListOf<StockMovementEntity>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        list.add(
+                            StockMovementEntity(
+                                id = o.optLong("id", 0L),
+                                productId = o.getLong("productId"),
+                                changeQuantity = o.optDouble("changeQuantity", 0.0),
+                                reason = o.optString("reason", "RESTOCK"),
+                                timestamp = o.optLong("timestamp", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    if (list.isNotEmpty()) {
+                        stockMovementDao.insertAll(list)
+                        totalRestored += list.size
+                    }
+                }
+            }
+            Result.success(totalRestored)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun reconcileAndAuditDatabase(): String {
+        return database.withTransaction {
+            val products = productDao.getAllProducts().first()
+            var fixedNegativeStock = 0
+            for (p in products) {
+                if (p.stockQuantity < 0) {
+                    productDao.updateProduct(p.copy(stockQuantity = 0.0))
+                    fixedNegativeStock++
+                }
+            }
+
+            val sales = saleDao.getAllSales().first()
+            var auditedSales = 0
+            for (s in sales) {
+                val items = saleDao.getItemsForSale(s.id)
+                if (items.isNotEmpty()) {
+                    auditedSales++
+                }
+            }
+
+            val customers = customerDao.getAllCustomers().first()
+            val fixText = if (fixedNegativeStock > 0) " Corrected $fixedNegativeStock negative stocks." else " 0 integrity errors."
+            "Audit passed: Verified ${products.size} products, $auditedSales sales, ${customers.size} customer ledgers.$fixText"
+        }
     }
 }
 

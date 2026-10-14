@@ -35,6 +35,12 @@ interface SaleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSaleItems(items: List<SaleItemEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSales(sales: List<SaleEntity>)
+
+    @Query("SELECT * FROM sale_items")
+    fun getAllSaleItems(): Flow<List<SaleItemEntity>>
+
     @Query("SELECT * FROM sales ORDER BY createdAt DESC")
     fun getAllSales(): Flow<List<SaleEntity>>
 
@@ -57,6 +63,15 @@ interface SaleDao {
         WHERE s.createdAt >= :startTime AND s.createdAt <= :endTime AND s.status = 'COMPLETED'
     """)
     fun getTotalItemsSold(startTime: Long, endTime: Long): Flow<Double>
+
+    @Query("""
+        SELECT COALESCE(SUM(si.quantity * p.costPrice), 0.0)
+        FROM sale_items si
+        INNER JOIN sales s ON si.saleId = s.id
+        INNER JOIN products p ON si.productId = p.id
+        WHERE s.status != 'CANCELLED' AND s.createdAt >= :startTime AND s.createdAt <= :endTime
+    """)
+    fun getCostOfGoodsSold(startTime: Long, endTime: Long): Flow<Double>
 
     @Query("SELECT COUNT(*) FROM sales WHERE createdAt >= :startTime AND createdAt <= :endTime AND status = 'COMPLETED'")
     fun getTransactionCount(startTime: Long, endTime: Long): Flow<Int>

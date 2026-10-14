@@ -23,6 +23,7 @@ data class CustomersUiState(
     val searchQuery: String = "",
     val currencySymbol: String = "₹",
     val businessName: String = "My Store",
+    val merchantUpiId: String = "ravistore@upi",
     val languageCode: String = "en"
 )
 
@@ -46,6 +47,7 @@ class CustomersViewModel(
             searchQuery = query,
             currencySymbol = prefs.currencySymbol,
             businessName = prefs.businessName,
+            merchantUpiId = prefs.merchantUpiId,
             languageCode = prefs.languageCode
         )
     }.stateIn(
@@ -84,8 +86,9 @@ class CustomersViewModel(
     fun getCustomerSales(customerId: Long) = repository.getSalesForCustomer(customerId)
     fun getCustomerPayments(customerId: Long) = repository.getPaymentsForCustomer(customerId)
 
-    fun sharePaymentReminder(context: Context, customerName: String, dueAmount: Double, currency: String, storeName: String) {
-        val message = "Hello $customerName, your pending balance at $storeName is $currency ${String.format("%.2f", dueAmount)}. Kindly settle at your earliest convenience. Thank you!"
+    fun sharePaymentReminder(context: Context, customerName: String, dueAmount: Double, currency: String, storeName: String, upiId: String = uiState.value.merchantUpiId) {
+        val upiLink = com.eta.assistant.core.util.UpiHelper.buildUpiUri(upiId, storeName, dueAmount, "Khata Clearance")
+        val message = "Hello $customerName, your pending balance at $storeName is $currency ${String.format(java.util.Locale.US, "%.2f", dueAmount)}. Pay via UPI: $upiLink (UPI ID: $upiId). Kindly settle at your earliest convenience. Thank you!"
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_TEXT, message)
@@ -95,8 +98,9 @@ class CustomersViewModel(
         context.startActivity(shareIntent)
     }
 
-    fun shareOnWhatsApp(context: Context, phone: String?, customerName: String, dueAmount: Double, currency: String, storeName: String) {
-        val message = "Hello $customerName, your pending balance at $storeName is $currency ${String.format("%.2f", dueAmount)}. Kindly settle at your earliest convenience. Thank you!"
+    fun shareOnWhatsApp(context: Context, phone: String?, customerName: String, dueAmount: Double, currency: String, storeName: String, upiId: String = uiState.value.merchantUpiId) {
+        val upiLink = com.eta.assistant.core.util.UpiHelper.buildUpiUri(upiId, storeName, dueAmount, "Khata Clearance")
+        val message = "Hello $customerName, your pending balance at $storeName is $currency ${String.format(java.util.Locale.US, "%.2f", dueAmount)}. Pay via UPI: $upiLink (UPI ID: $upiId). Kindly settle at your earliest convenience. Thank you!"
         try {
             val cleanPhone = phone?.filter { it.isDigit() } ?: ""
             val url = if (cleanPhone.isNotBlank()) {
@@ -108,7 +112,7 @@ class CustomersViewModel(
             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
             context.startActivity(intent)
         } catch (e: Exception) {
-            sharePaymentReminder(context, customerName, dueAmount, currency, storeName)
+            sharePaymentReminder(context, customerName, dueAmount, currency, storeName, upiId)
         }
     }
 }

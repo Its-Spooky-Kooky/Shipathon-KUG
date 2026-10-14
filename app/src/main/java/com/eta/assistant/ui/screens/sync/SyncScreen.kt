@@ -50,6 +50,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.OutlinedButton
@@ -76,6 +79,40 @@ fun SyncScreen(
     var isSyncing by remember { mutableStateOf(false) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            scope.launch {
+                isSyncing = true
+                syncMessage = null
+                try {
+                    val jsonString = context.contentResolver.openInputStream(uri)?.use { stream ->
+                        stream.bufferedReader().use { it.readText() }
+                    }
+                    if (jsonString != null && repository != null) {
+                        val result = repository.importFullBackupJson(jsonString)
+                        result.fold(
+                            onSuccess = { count ->
+                                preferencesRepository.updateLastSyncTime(System.currentTimeMillis())
+                                syncMessage = "Backup restored successfully! $count records imported."
+                            },
+                            onFailure = { err ->
+                                syncMessage = "Restore failed: ${err.message}"
+                            }
+                        )
+                    } else {
+                        syncMessage = "Could not read backup file."
+                    }
+                } catch (e: Exception) {
+                    syncMessage = "Error reading backup: ${e.message}"
+                } finally {
+                    isSyncing = false
+                }
+            }
+        }
+    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "rotation")
     val angle by infiniteTransition.animateFloat(
@@ -243,10 +280,10 @@ fun SyncScreen(
                 scope.launch {
                     isSyncing = true
                     syncMessage = null
-                    delay(1200)
+                    val report = repository?.reconcileAndAuditDatabase() ?: "Local database verified! 100% operational offline."
                     preferencesRepository.updateLastSyncTime(System.currentTimeMillis())
                     isSyncing = false
-                    syncMessage = "Local database verified! 100% operational offline."
+                    syncMessage = report
                 }
             },
             modifier = Modifier
@@ -275,48 +312,9 @@ fun SyncScreen(
                 scope.launch {
                     if (repository != null) {
                         try {
-                            val products = repository.getAllProducts().first()
-                            val customers = repository.getAllCustomers().first()
-                            val sales = repository.getAllSales().first()
-                            val expenses = repository.getAllExpenses().first()
-
-                            val backupJson = buildString {
-                                append("{\n")
-                                append("  \"app\": \"Eta Business Assistant\",\n")
-                                append("  \"version\": \"1.0.0\",\n")
-                                append("  \"timestamp\": ${System.currentTimeMillis()},\n")
-                                append("  \"exportDate\": \"${DateUtils.formatDateTime(System.currentTimeMillis())}\",\n")
-                                append("  \"totals\": {\n")
-                                append("    \"products\": ${products.size},\n")
-                                append("    \"customers\": ${customers.size},\n")
-                                append("    \"sales\": ${sales.size},\n")
-                                append("    \"expenses\": ${expenses.size}\n")
-                                append("  },\n")
-                                append("  \"products\": [\n")
-                                products.forEachIndexed { i, p ->
-                                    append("    {\"id\": ${p.id}, \"name\": \"${p.name.replace("\"", "\\\"")}\", \"stock\": ${p.stockQuantity}, \"sellingPrice\": ${p.sellingPrice}, \"unit\": \"${p.unit}\"}")
-                                    if (i < products.size - 1) append(",")
-                                    append("\n")
-                                }
-                                append("  ],\n")
-                                append("  \"customers\": [\n")
-                                customers.forEachIndexed { i, c ->
-                                    append("    {\"id\": ${c.id}, \"name\": \"${c.name.replace("\"", "\\\"")}\", \"phone\": \"${c.phone}\"}")
-                                    if (i < customers.size - 1) append(",")
-                                    append("\n")
-                                }
-                                append("  ],\n")
-                                append("  \"sales\": [\n")
-                                sales.forEachIndexed { i, s ->
-                                    append("    {\"id\": ${s.id}, \"customer\": \"${s.customerName.replace("\"", "\\\"")}\", \"total\": ${s.totalAmount}, \"paid\": ${s.paidAmount}, \"method\": \"${s.paymentMethod}\"}")
-                                    if (i < sales.size - 1) append(",")
-                                    append("\n")
-                                }
-                                append("  ]\n")
-                                append("}")
-                            }
-
-                            val backupFile = File(context.cacheDir, "eta_backup_${System.currentTimeMillis()}.json")
+                            val backupJson = repository.exportFullBackupJson()
+                            val backupDir = File(context.filesDir, "backups").apply { mkdirs() }
+                            val backupFile = File(backupDir, "eta_backup_${System.currentTimeMillis()}.json")
                             backupFile.writeText(backupJson)
 
                             val contentUri = FileProvider.getUriForFile(
@@ -328,11 +326,11 @@ fun SyncScreen(
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "application/json"
                                 putExtra(Intent.EXTRA_STREAM, contentUri)
-                                putExtra(Intent.EXTRA_SUBJECT, "Eta Store SQLite Backup")
+                                putExtra(Intent.EXTRA_SUBJECT, "Eta Store Full Database Backup")
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
                             context.startActivity(Intent.createChooser(shareIntent, "Share Database Backup"))
-                            syncMessage = "Backup ready! Exported ${products.size} items, ${sales.size} sales, ${customers.size} customers."
+                            syncMessage = "Full 7-table backup exported successfully!"
                         } catch (e: Exception) {
                             syncMessage = "Export failed: ${e.message}"
                         }
@@ -344,12 +342,33 @@ fun SyncScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(14.dp),
+            enabled = !isSyncing
         ) {
             Icon(Icons.Default.Share, "Export Backup", modifier = Modifier.size(20.dp), tint = OrangePrimary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Export Backup (.json)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = { filePickerLauncher.launch("*/*") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
+            enabled = !isSyncing
+        ) {
+            Icon(Icons.Default.FileDownload, "Restore Backup", modifier = Modifier.size(20.dp), tint = OrangePrimary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Restore Backup (.json)",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground

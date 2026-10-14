@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -157,18 +158,21 @@ fun ReportsScreen(
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
 
+                                val isPositiveTrend = !state.trendPercentageText.startsWith("-")
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Filled.TrendingUp,
                                         contentDescription = "Trend",
-                                        tint = SuccessGreen,
-                                        modifier = Modifier.size(16.dp)
+                                        tint = if (isPositiveTrend) SuccessGreen else MaterialTheme.colorScheme.error,
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .scale(scaleX = 1f, scaleY = if (isPositiveTrend) 1f else -1f)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "+12% vs last week",
+                                        text = state.trendPercentageText,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = SuccessGreen,
+                                        color = if (isPositiveTrend) SuccessGreen else MaterialTheme.colorScheme.error,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -261,6 +265,84 @@ fun ReportsScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = OrangePrimary
                             )
+                        }
+                    }
+                }
+            }
+
+            // Profit & Margin Card (Gross Profit, Net Profit, Margin %)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Profit & Margin",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            val marginPercent = if (state.totalSales > 0) ((state.grossProfit / state.totalSales) * 100).toInt() else 0
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        color = if (marginPercent >= 0) SuccessGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "$marginPercent% Margin",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (marginPercent >= 0) SuccessGreen else MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Gross Profit",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = CurrencyFormatter.format(state.grossProfit, state.currencySymbol),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (state.grossProfit >= 0) SuccessGreen else MaterialTheme.colorScheme.error
+                                )
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "Net Profit (After Exp)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = CurrencyFormatter.format(state.netProfit, state.currencySymbol),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (state.netProfit >= 0) SuccessGreen else MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }

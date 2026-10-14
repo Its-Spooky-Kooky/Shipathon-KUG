@@ -284,7 +284,10 @@ fun VoiceSaleScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     val summary = when (val intent = state.parsedIntent) {
-                        is ParsedIntent.RecordSale -> "Record sale of ${intent.quantity.toInt()} ${intent.productName} for ${intent.customerName} (${intent.amount?.let { "₹$it" } ?: "Inventory Price"})"
+                        is ParsedIntent.RecordSale -> {
+                            val creditSuffix = if (intent.isCredit) " (Payment: CREDIT)" else ""
+                            "Record sale of ${intent.quantity.toInt()} ${intent.productName} for ${intent.customerName} (${intent.amount?.let { "₹$it" } ?: "Inventory Price"})$creditSuffix"
+                        }
                         is ParsedIntent.AddStock -> "Add ${intent.quantity.toInt()} ${intent.productName} to inventory stock"
                         is ParsedIntent.ShowDues -> "View customer outstanding balances"
                         is ParsedIntent.ShowTopSelling -> "View top selling items report"

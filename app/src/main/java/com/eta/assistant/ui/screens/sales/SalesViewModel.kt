@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.eta.assistant.data.local.dao.CustomerWithBalance
 import com.eta.assistant.data.local.dao.SaleWithItems
-import com.eta.assistant.data.local.entity.CustomerEntity
 import com.eta.assistant.data.local.entity.ProductEntity
 import com.eta.assistant.data.preferences.UserPreferencesRepository
 import com.eta.assistant.data.repository.CartItem
@@ -24,6 +23,9 @@ data class SalesUiState(
     val cartItems: List<CartItem> = emptyList(),
     val selectedCustomer: CustomerWithBalance? = null,
     val paymentMode: String = "CASH", // CASH, UPI, CREDIT
+    val customPaidAmount: Double? = null,
+    val merchantUpiId: String = "ravistore@upi",
+    val businessName: String = "Ravi Store",
     val currencySymbol: String = "₹",
     val searchQuery: String = "",
     val error: String? = null,
@@ -40,6 +42,7 @@ class SalesViewModel(
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     private val _selectedCustomer = MutableStateFlow<CustomerWithBalance?>(null)
     private val _paymentMode = MutableStateFlow("CASH")
+    private val _customPaidAmount = MutableStateFlow<Double?>(null)
     private val _searchQuery = MutableStateFlow("")
     private val _error = MutableStateFlow<String?>(null)
 
@@ -47,6 +50,7 @@ class SalesViewModel(
         val cart: List<CartItem>,
         val customer: CustomerWithBalance?,
         val mode: String,
+        val customPaid: Double?,
         val error: String?
     )
 
@@ -54,9 +58,10 @@ class SalesViewModel(
         _cartItems,
         _selectedCustomer,
         _paymentMode,
+        _customPaidAmount,
         _error
-    ) { cart, customer, mode, err ->
-        CheckoutFormState(cart, customer, mode, err)
+    ) { cart, customer, mode, customPaid, err ->
+        CheckoutFormState(cart, customer, mode, customPaid, err)
     }
 
     private val filteredProductsFlow = combine(
@@ -81,6 +86,9 @@ class SalesViewModel(
             cartItems = form.cart,
             selectedCustomer = form.customer,
             paymentMode = form.mode,
+            customPaidAmount = form.customPaid,
+            merchantUpiId = prefs.merchantUpiId,
+            businessName = prefs.businessName,
             currencySymbol = prefs.currencySymbol,
             searchQuery = filteredPair.second,
             error = form.error,
@@ -110,7 +118,18 @@ class SalesViewModel(
             }
         }
         _cartItems.value = currentList
-        _error.value = null
+        if (_paymentMode.value != "CREDIT") {
+            _customPaidAmount.value = currentList.sumOf { it.subtotal }
+        }
+    }
+
+    fun removeFromCart(productId: Long) {
+        val currentList = _cartItems.value.toMutableList()
+        currentList.removeAll { it.product.id == productId }
+        _cartItems.value = currentList
+        if (_paymentMode.value != "CREDIT") {
+            _customPaidAmount.value = currentList.sumOf { it.subtotal }
+        }
     }
 
     fun updateQuantity(productId: Long, newQuantity: Double) {
@@ -126,6 +145,9 @@ class SalesViewModel(
                 }
             }
             _cartItems.value = currentList
+            if (_paymentMode.value != "CREDIT") {
+                _customPaidAmount.value = currentList.sumOf { it.subtotal }
+            }
         }
     }
 
@@ -135,6 +157,16 @@ class SalesViewModel(
 
     fun setPaymentMode(mode: String) {
         _paymentMode.value = mode
+        val total = _cartItems.value.sumOf { it.subtotal }
+        if (mode == "CREDIT") {
+            _customPaidAmount.value = 0.0
+        } else {
+            _customPaidAmount.value = total
+        }
+    }
+
+    fun setCustomPaidAmount(amount: Double?) {
+        _customPaidAmount.value = amount
     }
 
     fun confirmSale(onSuccess: (Long) -> Unit) {
@@ -144,8 +176,15 @@ class SalesViewModel(
             return
         }
 
+        val totalAmount = state.totalAmount
+        val paidAmount = state.customPaidAmount ?: if (state.paymentMode == "CREDIT") 0.0 else totalAmount
+
+        if (paidAmount < totalAmount && state.selectedCustomer == null) {
+            _error.value = "Please select a customer to record partial/credit due"
+            return
+        }
+
         viewModelScope.launch {
-            val paidAmount = if (state.paymentMode == "CREDIT") 0.0 else state.totalAmount
             val customerName = state.selectedCustomer?.name ?: "Walk-in Customer"
             val customerId = state.selectedCustomer?.id
 
@@ -161,6 +200,7 @@ class SalesViewModel(
                 is SaleResult.Success -> {
                     _cartItems.value = emptyList()
                     _selectedCustomer.value = null
+                    _customPaidAmount.value = null
                     _error.value = null
                     onSuccess(result.saleId)
                 }

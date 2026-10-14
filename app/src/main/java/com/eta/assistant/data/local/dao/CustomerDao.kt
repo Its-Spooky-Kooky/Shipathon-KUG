@@ -47,8 +47,8 @@ interface CustomerDao {
         SELECT 
             c.id, c.name, c.phone, c.notes, c.createdAt,
             COALESCE(SUM(s.totalAmount), 0.0) AS totalPurchased,
-            COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id), 0.0) AS totalPaid,
-            COALESCE(SUM(s.totalAmount), 0.0) - (COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id), 0.0)) AS totalDue
+            COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id AND saleId IS NULL), 0.0) AS totalPaid,
+            COALESCE(SUM(s.totalAmount), 0.0) - (COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id AND saleId IS NULL), 0.0)) AS totalDue
         FROM customers c
         LEFT JOIN sales s ON s.customerId = c.id AND s.status = 'COMPLETED'
         GROUP BY c.id
@@ -60,8 +60,8 @@ interface CustomerDao {
         SELECT 
             c.id, c.name, c.phone, c.notes, c.createdAt,
             COALESCE(SUM(s.totalAmount), 0.0) AS totalPurchased,
-            COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id), 0.0) AS totalPaid,
-            COALESCE(SUM(s.totalAmount), 0.0) - (COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id), 0.0)) AS totalDue
+            COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id AND saleId IS NULL), 0.0) AS totalPaid,
+            COALESCE(SUM(s.totalAmount), 0.0) - (COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id AND saleId IS NULL), 0.0)) AS totalDue
         FROM customers c
         LEFT JOIN sales s ON s.customerId = c.id AND s.status = 'COMPLETED'
         WHERE c.id = :customerId
@@ -72,7 +72,7 @@ interface CustomerDao {
     @Query("""
         SELECT COALESCE(SUM(totalDue), 0.0) FROM (
             SELECT 
-                COALESCE(SUM(s.totalAmount), 0.0) - (COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id), 0.0)) AS totalDue
+                COALESCE(SUM(s.totalAmount), 0.0) - (COALESCE(SUM(s.paidAmount), 0.0) + COALESCE((SELECT SUM(amount) FROM payments WHERE customerId = c.id AND saleId IS NULL), 0.0)) AS totalDue
             FROM customers c
             LEFT JOIN sales s ON s.customerId = c.id AND s.status = 'COMPLETED'
             GROUP BY c.id

@@ -12,6 +12,9 @@ interface PaymentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPayment(payment: PaymentEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(payments: List<PaymentEntity>)
+
     @Query("SELECT * FROM payments WHERE customerId = :customerId ORDER BY createdAt DESC")
     fun getPaymentsForCustomer(customerId: Long): Flow<List<PaymentEntity>>
 
@@ -20,5 +23,8 @@ interface PaymentDao {
 
     @Query("SELECT COALESCE(SUM(amount), 0.0) FROM payments WHERE createdAt >= :startTime AND createdAt <= :endTime")
     fun getTotalPaymentsBetween(startTime: Long, endTime: Long): Flow<Double>
+
+    @Query("DELETE FROM payments WHERE saleId = :saleId")
+    suspend fun deletePaymentsForSale(saleId: Long)
 }
 
