@@ -285,7 +285,7 @@ fun ReportsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Profit & Margin",
+                                text = com.eta.assistant.core.util.LocaleStrings.get("profit_and_margin", state.languageCode),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -300,7 +300,7 @@ fun ReportsScreen(
                                     .padding(horizontal = 8.dp, vertical = 4.dp)
                             ) {
                                 Text(
-                                    text = "$marginPercent% Margin",
+                                    text = "$marginPercent% ${com.eta.assistant.core.util.LocaleStrings.get("margin_percent", state.languageCode)}",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (marginPercent >= 0) SuccessGreen else MaterialTheme.colorScheme.error
@@ -316,7 +316,7 @@ fun ReportsScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "Gross Profit",
+                                    text = com.eta.assistant.core.util.LocaleStrings.get("gross_profit", state.languageCode),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -331,7 +331,7 @@ fun ReportsScreen(
 
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = "Net Profit (After Exp)",
+                                    text = com.eta.assistant.core.util.LocaleStrings.get("net_profit_after_exp", state.languageCode),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

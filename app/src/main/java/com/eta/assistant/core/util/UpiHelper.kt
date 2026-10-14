@@ -111,6 +111,7 @@ fun UpiPaymentCard(
     businessName: String,
     amount: Double,
     currencySymbol: String = "₹",
+    languageCode: String = "en",
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -132,7 +133,7 @@ fun UpiPaymentCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "UPI Payment & QR",
+                    text = LocaleStrings.get("upi_payment_qr", languageCode),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = OrangePrimary
@@ -176,7 +177,7 @@ fun UpiPaymentCard(
                 colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Open UPI App to Verify", fontWeight = FontWeight.Bold, color = Color.White)
+                Text(LocaleStrings.get("open_upi_verify", languageCode), fontWeight = FontWeight.Bold, color = Color.White)
             }
 
             Spacer(modifier = Modifier.height(6.dp))

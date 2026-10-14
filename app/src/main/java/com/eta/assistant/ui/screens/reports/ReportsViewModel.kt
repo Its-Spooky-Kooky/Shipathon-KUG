@@ -147,13 +147,14 @@ class ReportsViewModel(
             } else {
                 0.0
             }
-            val periodLabel = when (period) {
-                ReportPeriod.TODAY -> "yesterday"
-                ReportPeriod.SEVEN_DAYS -> "last week"
-                ReportPeriod.THIRTY_DAYS -> "last month"
+            val periodKey = when (period) {
+                ReportPeriod.TODAY -> "vs_yesterday"
+                ReportPeriod.SEVEN_DAYS -> "vs_last_week"
+                ReportPeriod.THIRTY_DAYS -> "vs_last_month"
             }
+            val periodLabel = com.eta.assistant.core.util.LocaleStrings.get(periodKey, prefs.languageCode)
             val sign = if (percent >= 0) "+" else ""
-            val trendPercentageText = "$sign${percent.toInt()}% vs $periodLabel"
+            val trendPercentageText = "$sign${percent.toInt()}% $periodLabel"
 
             ReportsUiState(
                 selectedPeriod = period,

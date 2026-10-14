@@ -1483,36 +1483,36 @@
       <div class="sim-prompts">
         <h4>Select a business voice query:</h4>
 
-        <div class="prompt-chip active" onclick="simulateVoice('500 rupay ki chini aur daal Ramesh ke khate mein likh do', 'Hindi', 'RecordSale', 'Ramesh Kumar', '₹500.00', 'Sugar + Pulses', this)">
+        <div class="prompt-chip active" onclick="simulateVoice('500 rupay ki chini Ramesh ke khate mein likh do', 'Hindi', 'RecordSale (Credit)', 'Ramesh Kumar', '₹500.00 (Sugar 1kg)', 'Payment: CREDIT • Khata Ledger', this)">
           <div>
-            <strong>"₹500 ki chini Ramesh ke khate mein likh do"</strong>
-            <span>Hindi • Record Sale to Khata</span>
+            <strong>"500 rupay ki chini Ramesh ke khate mein likh do"</strong>
+            <span>हिन्दी (Hindi) • Record Sale to Khata</span>
           </div>
           <span class="chip-lang">Hindi</span>
         </div>
 
-        <div class="prompt-chip" onclick="simulateVoice('Add 10 bags of Ashirvaad flour and 5 mustard oils to stock', 'English', 'StockAdd', 'Inventory', '+15 Items', 'Flour, Oil', this)">
+        <div class="prompt-chip" onclick="simulateVoice('Record sale of 2 packets of milk 60 rupees for Ramesh', 'English', 'RecordSale', 'Ramesh Kumar', '₹60.00 (Milk 2 pkts)', 'Payment: Cash • Catalog Matched', this)">
           <div>
-            <strong>"Add 10 bags of flour and 5 oils to stock"</strong>
-            <span>English • Quick Restock</span>
+            <strong>"Record sale of 2 packets of milk 60 rupees for Ramesh"</strong>
+            <span>English • Quick Counter Sale</span>
           </div>
           <span class="chip-lang">English</span>
         </div>
 
-        <div class="prompt-chip" onclick="simulateVoice('Suresh ka kitna udhar baki hai dikhao', 'Hinglish', 'QueryDues', 'Suresh Patel', '₹1,450.00 Due', 'Customer Ledger', this)">
+        <div class="prompt-chip" onclick="simulateVoice('ரமேஷுக்கு 200 ரூபாய் அரிசி கணக்கில் எழுது', 'Tamil', 'RecordSale (Credit)', 'Ramesh Kumar', '₹200.00 (Rice 1kg)', 'Payment: CREDIT • Tamil Kanaku Ledger', this)">
           <div>
-            <strong>"Suresh ka kitna udhar baki hai dikhao"</strong>
-            <span>Hinglish • Customer Ledger Check</span>
+            <strong>"ரமேஷுக்கு 200 ரூபாய் அரிசி கணக்கில் எழுது"</strong>
+            <span>தமிழ் (Tamil) • Khata Credit Sale</span>
           </div>
-          <span class="chip-lang">Hinglish</span>
+          <span class="chip-lang">Tamil</span>
         </div>
 
-        <div class="prompt-chip" onclick="simulateVoice('Aj subah se kitna cash bika hai?', 'Hindi', 'DailySummary', 'Cash Drawer', '₹14,250.00', 'Today\'s Total', this)">
+        <div class="prompt-chip" onclick="simulateVoice('রমেশের খাতায় ২০০ টাকার ডাল লিখে দাও', 'Bengali', 'RecordSale (Credit)', 'Ramesh Kumar', '₹200.00 (Pulses / Daal)', 'Payment: CREDIT • Baki Ledger', this)">
           <div>
-            <strong>"Aj subah se kitna cash bika hai?"</strong>
-            <span>Hindi • Daily Sales Summary</span>
+            <strong>"রমেশের খাতায় ২০০ টাকার ডাল লিখে দাও"</strong>
+            <span>বাংলা (Bengali) • Khata Credit Sale</span>
           </div>
-          <span class="chip-lang">Hindi</span>
+          <span class="chip-lang">Bengali</span>
         </div>
       </div>
 
@@ -1525,14 +1525,14 @@
         </div>
         <div class="terminal-body">
           <div class="term-line-input" id="terminalSpeech">
-            &gt; Listening: "₹500 ki chini Ramesh ke khate mein likh do"
+            &gt; Listening: "500 rupay ki chini Ramesh ke khate mein likh do" <span style="color: var(--primary);">[Hindi]</span>
           </div>
           <div class="term-line-parsed" id="terminalResult">
-            ✓ INTENT DETECTED: <strong>RecordSale</strong><br>
-            • Customer: <strong>Ramesh Kumar</strong><br>
-            • Amount: <strong>₹500.00</strong> (Payment: CREDIT)<br>
-            • Product Matched: <strong>Sugar (1kg)</strong><br>
-            • Latency: <strong>320ms</strong> (100% on-device SQLite)
+            ✓ INTENT DETECTED: <strong>RecordSale (Credit)</strong><br>
+            • Target: <strong>Ramesh Kumar</strong><br>
+            • Metric/Amount: <strong>₹500.00 (Sugar 1kg)</strong><br>
+            • Context: <strong>Payment: CREDIT • Khata Ledger</strong><br>
+            • Latency: <strong>290ms</strong> (100% on-device SQLite)
           </div>
         </div>
       </div>

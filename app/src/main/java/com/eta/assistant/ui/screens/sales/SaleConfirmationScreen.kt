@@ -229,7 +229,7 @@ fun SaleConfirmationScreen(
 
                             Column {
                                 Text(
-                                    text = "Amount Paid Now",
+                                    text = com.eta.assistant.core.util.LocaleStrings.get("amount_paid_now", state.languageCode),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -240,7 +240,7 @@ fun SaleConfirmationScreen(
                                         val amt = input.toDoubleOrNull()
                                         viewModel.setCustomPaidAmount(amt)
                                     },
-                                    label = { Text("Paid Amount (${state.currencySymbol})") },
+                                    label = { Text("${com.eta.assistant.core.util.LocaleStrings.get("paid_amount", state.languageCode)} (${state.currencySymbol})") },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
                                     shape = RoundedCornerShape(12.dp)
@@ -248,7 +248,7 @@ fun SaleConfirmationScreen(
                                 if (remainingDue > 0) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "Remaining Due to Khata: ${CurrencyFormatter.format(remainingDue, state.currencySymbol)}",
+                                        text = "${com.eta.assistant.core.util.LocaleStrings.get("remaining_khata_due", state.languageCode)}: ${CurrencyFormatter.format(remainingDue, state.currencySymbol)}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = OrangePrimary,
                                         fontWeight = FontWeight.SemiBold
@@ -292,7 +292,8 @@ fun SaleConfirmationScreen(
                         upiId = state.merchantUpiId,
                         businessName = state.businessName,
                         amount = payableAmount,
-                        currencySymbol = state.currencySymbol
+                        currencySymbol = state.currencySymbol,
+                        languageCode = state.languageCode
                     )
                 }
             }

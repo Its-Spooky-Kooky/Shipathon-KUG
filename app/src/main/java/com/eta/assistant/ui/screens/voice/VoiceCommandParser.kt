@@ -56,8 +56,31 @@ object VoiceCommandParser {
         "বাকি", "ধার", "বকেয়া"
     )
 
+    fun normalizeIndicDigits(input: String): String {
+        val sb = StringBuilder()
+        for (ch in input) {
+            val normalized = when (ch) {
+                in '०'..'९' -> '0' + (ch - '०')
+                in '০'..'৯' -> '0' + (ch - '০')
+                in '௧'..'௯' -> '1' + (ch - '௧')
+                '௦' -> '0'
+                else -> ch
+            }
+            sb.append(normalized)
+        }
+        return sb.toString()
+    }
+
+    fun cleanCustomerName(raw: String): String {
+        var c = raw.trim()
+        c = c.replace(Regex("""(?:-?ukku|-?kku|ுக்கு|க்கு)$""", RegexOption.IGNORE_CASE), "")
+        c = c.replace(Regex("""(?:-?er|ের|র)$""", RegexOption.IGNORE_CASE), "")
+        c = c.replace(Regex("""\s+(?:ke|ko|के|को)$""", RegexOption.IGNORE_CASE), "")
+        return c.trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    }
+
     fun parse(text: String): ParsedIntent {
-        val clean = text.trim()
+        val clean = normalizeIndicDigits(text.trim())
         val lower = clean.lowercase()
 
         // 1. Show dues / debts query (English, Hindi, Tamil, Bengali)
@@ -101,8 +124,51 @@ object VoiceCommandParser {
 
         val isCredit = creditKeywords.any { lower.contains(it) }
 
-        // 4. Hindi/Hinglish SOV pattern: <amount> rupay ki <product> <customer> ke khate mein (likh do)
-        // e.g. "500 rupay ki chini Ramesh ke khate mein likh do"
+        // 4. Tamil SOV pattern: <customer>(-ukku)? <amount> (ரூபாய்)? <product> (கணக்கில்)? (எழுது)?
+        // e.g. "ரமேஷுக்கு 200 ரூபாய் அரிசி கணக்கில் எழுது"
+        val tamilSovPattern = Regex(
+            """^([a-zA-Z\u0900-\u0D7F]+)\s+(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)\s*(?:ரூபாய்|roobai|rupees?|rs\.?|₹)?\s+([a-zA-Z\u0900-\u0D7F]+)\s*(?:கணக்கில்|கடன்|எழுது).*""",
+            RegexOption.IGNORE_CASE
+        )
+        val tamilMatch = tamilSovPattern.find(clean)
+        if (tamilMatch != null) {
+            val cust = cleanCustomerName(tamilMatch.groupValues[1])
+            val amt = tamilMatch.groupValues[2].toDoubleOrNull()
+            val prod = tamilMatch.groupValues[3].trim()
+            if (!listOf("record", "add", "sale", "show").contains(cust.lowercase())) {
+                return ParsedIntent.RecordSale(
+                    productName = prod,
+                    quantity = 1.0,
+                    amount = amt,
+                    customerName = cust,
+                    isCredit = isCredit || clean.contains("கணக்கில்") || clean.contains("கடன்")
+                )
+            }
+        }
+
+        // 5. Bengali SOV pattern: <customer>(-er)? (খাতায়)? <amount> (টাকার|টাকা)? <product> (লিখে দাও)?
+        // e.g. "রমেশের খাতায় ২০০ টাকার ডাল লিখে দাও"
+        val bengaliSovPattern = Regex(
+            """^([a-zA-Z\u0900-\u0D7F]+)\s+(?:খাতায়\s+)?(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)\s*(?:টাকার|টাকা|taka|rs\.?|₹)?\s+([a-zA-Z\u0900-\u0D7F]+)\s*(?:লিখে\s+দাও|বাকি).*""",
+            RegexOption.IGNORE_CASE
+        )
+        val bengaliMatch = bengaliSovPattern.find(clean)
+        if (bengaliMatch != null) {
+            val cust = cleanCustomerName(bengaliMatch.groupValues[1])
+            val amt = bengaliMatch.groupValues[2].toDoubleOrNull()
+            val prod = bengaliMatch.groupValues[3].trim()
+            if (!listOf("record", "add", "sale", "show").contains(cust.lowercase())) {
+                return ParsedIntent.RecordSale(
+                    productName = prod,
+                    quantity = 1.0,
+                    amount = amt,
+                    customerName = cust,
+                    isCredit = isCredit || clean.contains("খাতায়") || clean.contains("বাকি")
+                )
+            }
+        }
+
+        // 6. Hindi/Hinglish SOV pattern: <amount> rupay ki <product> <customer> ke khate mein (likh do)
         val sovPattern1 = Regex(
             """(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)\s*(?:rupay|rupaye|rupees?|rs\.?|₹|रुपये|ரூபாய்|টাকা)?\s*(?:ki|ka|of)?\s+([a-zA-Z\u0900-\u0D7F]+)\s+([a-zA-Z\u0900-\u0D7F]+)\s+(?:ke\s+khate\s+(?:mein|me)|khate\s+(?:mein|me)|ko|ke\s+liye|ke|for)\b.*""",
             RegexOption.IGNORE_CASE
@@ -111,7 +177,7 @@ object VoiceCommandParser {
         if (sovMatch1 != null) {
             val amt = sovMatch1.groupValues[1].toDoubleOrNull()
             val prod = sovMatch1.groupValues[2].trim()
-            val cust = sovMatch1.groupValues[3].trim().replaceFirstChar { it.uppercase() }
+            val cust = cleanCustomerName(sovMatch1.groupValues[3])
             return ParsedIntent.RecordSale(
                 productName = prod,
                 quantity = 1.0,
@@ -121,7 +187,7 @@ object VoiceCommandParser {
             )
         }
 
-        // 5. Customer-first patterns:
+        // 7. Customer-first patterns:
         // Customer with quantity and product: e.g. "Ramesh 2 kg rice udhaar" or "Ramesh 2 kg chini 100 rupay"
         val custQtyProdPattern = Regex(
             """^([a-zA-Z\u0900-\u0D7F]+)\s+(\d+(?:\.\d+)?|[a-zA-Z\u0900-\u0D7F]+)\s*(?:kg|kilo|packet|packets|box|boxes|l|litres|bottle|bottles|किलो|கிலோ|কেজি)?\s+([a-zA-Z\u0900-\u0D7F]+)(?:\s+(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)\s*(?:rupay|rupaye|rupees?|rs\.?|₹|रुपये)?)?.*""",
@@ -129,7 +195,7 @@ object VoiceCommandParser {
         )
         val custQtyMatch = custQtyProdPattern.find(clean)
         if (custQtyMatch != null) {
-            val candidateCust = custQtyMatch.groupValues[1].trim()
+            val candidateCust = cleanCustomerName(custQtyMatch.groupValues[1])
             if (!listOf("record", "add", "sale", "show").contains(candidateCust.lowercase())) {
                 val qty = parseQuantity(custQtyMatch.groupValues[2])
                 val prod = custQtyMatch.groupValues[3].trim()
@@ -138,13 +204,33 @@ object VoiceCommandParser {
                     productName = prod,
                     quantity = qty,
                     amount = amt,
-                    customerName = candidateCust.replaceFirstChar { it.uppercase() },
+                    customerName = candidateCust,
                     isCredit = isCredit
                 )
             }
         }
 
-        // Customer with amount only or amount + customer:
+        // 8. Amount + credit + customer: e.g. "500 udhar Ramesh" or "500 rupay udhar Ramesh"
+        val amtCreditCustPattern = Regex(
+            """^(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)\s*(?:rupay|rupaye|rupees?|rs\.?|₹|रुपये|ரூபாய்|টাকা)?\s*(?:udhar|udhaar|udhaari|credit|baki|उधार|கடன்|বাকি)\s+([a-zA-Z\u0900-\u0D7F]+)$""",
+            RegexOption.IGNORE_CASE
+        )
+        val amtCreditMatch = amtCreditCustPattern.find(clean)
+        if (amtCreditMatch != null) {
+            val amt = amtCreditMatch.groupValues[1].toDoubleOrNull()
+            val cust = cleanCustomerName(amtCreditMatch.groupValues[2])
+            if (amt != null && amt > 0) {
+                return ParsedIntent.RecordSale(
+                    productName = "Store Item",
+                    quantity = 1.0,
+                    amount = amt,
+                    customerName = cust,
+                    isCredit = true
+                )
+            }
+        }
+
+        // 9. Customer with amount only or amount + customer:
         // e.g. "Ramesh ke khate mein 500 rupay" or "Ramesh 500 rupay"
         val custAmtPattern = Regex(
             """^([a-zA-Z\u0900-\u0D7F]+)\s+(?:ke\s+khate\s+(?:mein|me)\s+|ko\s+)?(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)\s*(?:rupay|rupaye|rupees?|rs\.?|₹|रुपये)?.*""",
@@ -152,7 +238,7 @@ object VoiceCommandParser {
         )
         val custAmtMatch = custAmtPattern.find(clean)
         if (custAmtMatch != null) {
-            val candidateCust = custAmtMatch.groupValues[1].trim()
+            val candidateCust = cleanCustomerName(custAmtMatch.groupValues[1])
             if (!listOf("record", "add", "sale", "show").contains(candidateCust.lowercase())) {
                 val amt = custAmtMatch.groupValues[2].toDoubleOrNull()
                 if (amt != null && amt > 0) {
@@ -160,7 +246,7 @@ object VoiceCommandParser {
                         productName = "Store Item",
                         quantity = 1.0,
                         amount = amt,
-                        customerName = candidateCust.replaceFirstChar { it.uppercase() },
+                        customerName = candidateCust,
                         isCredit = isCredit
                     )
                 }

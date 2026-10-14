@@ -250,7 +250,7 @@ fun SyncScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Last synced",
+                        text = com.eta.assistant.core.util.LocaleStrings.get("last_synced", prefs?.languageCode ?: "en"),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -299,7 +299,7 @@ fun SyncScreen(
             Icon(Icons.Default.Refresh, "Reconcile Now", modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isSyncing) "Checking..." else "Reconcile Local DB",
+                text = if (isSyncing) "Checking..." else com.eta.assistant.core.util.LocaleStrings.get("reconcile_db", prefs?.languageCode ?: "en"),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -348,7 +348,7 @@ fun SyncScreen(
             Icon(Icons.Default.Share, "Export Backup", modifier = Modifier.size(20.dp), tint = OrangePrimary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Export Backup (.json)",
+                text = com.eta.assistant.core.util.LocaleStrings.get("export_backup_json", prefs?.languageCode ?: "en"),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -368,7 +368,7 @@ fun SyncScreen(
             Icon(Icons.Default.FileDownload, "Restore Backup", modifier = Modifier.size(20.dp), tint = OrangePrimary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Restore Backup (.json)",
+                text = com.eta.assistant.core.util.LocaleStrings.get("restore_backup_json", prefs?.languageCode ?: "en"),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground

@@ -154,11 +154,13 @@ class VoiceViewModel(
         val aliases = mapOf(
             "sugar" to listOf("sugar", "chini", "shakkar", "चीनी", "शक्कर", "சர்க்கரை", "চিনি"),
             "rice" to listOf("rice", "chawal", "चावल", "அரிசி", "চাল"),
+            "milk" to listOf("milk", "doodh", "dudh", "दूध", "பால்", "দুধ", "amul"),
+            "salt" to listOf("salt", "namak", "नमक", "உப்பு", "নুন", "লবণ", "tata"),
             "oil" to listOf("oil", "tel", "cooking oil", "तेल", "எண்ணெய்", "তেল"),
             "tea" to listOf("tea", "chai", "patti", "tea powder", "चाय", "தேயிலை", "চা"),
             "biscuit" to listOf("biscuit", "biscuits", "parle", "बिस्कुट", "बिस्किट", "பிஸ்கட்", "বিস্কুট"),
-            "flour" to listOf("flour", "atta", "aata", "wheat", "आटा", "கோதுமை மாவு", "আটা"),
-            "dal" to listOf("dal", "daal", "lentils", "दाल", "பருப்பு", "ডাল"),
+            "flour" to listOf("flour", "atta", "aata", "wheat", "आटा", "கோதுமை மாவு", "আটা", "ashirvaad"),
+            "dal" to listOf("dal", "daal", "lentils", "pulses", "दाल", "பருப்பு", "ডাল"),
             "soap" to listOf("soap", "sabun", "साबुन", "சோப்பு", "সাবান")
         )
 

@@ -114,4 +114,48 @@ class VoiceCommandParserTest {
         assertEquals("Ramesh", sale.customerName)
         assertEquals(500.0, sale.amount ?: 0.0, 0.001)
     }
+
+    @Test
+    fun testTamilSovCommand() {
+        val result = VoiceCommandParser.parse("ரமேஷுக்கு 200 ரூபாய் அரிசி கணக்கில் எழுது")
+        assertTrue(result is ParsedIntent.RecordSale)
+        val sale = result as ParsedIntent.RecordSale
+        assertEquals("ரமேஷ", sale.customerName)
+        assertEquals("அரிசி", sale.productName)
+        assertEquals(200.0, sale.amount ?: 0.0, 0.001)
+        assertTrue(sale.isCredit)
+    }
+
+    @Test
+    fun testBengaliSovWithIndicDigits() {
+        val result = VoiceCommandParser.parse("রমেশের খাতায় ২০০ টাকার ডাল লিখে দাও")
+        assertTrue(result is ParsedIntent.RecordSale)
+        val sale = result as ParsedIntent.RecordSale
+        assertEquals("রমেশ", sale.customerName)
+        assertEquals("ডাল", sale.productName)
+        assertEquals(200.0, sale.amount ?: 0.0, 0.001)
+        assertTrue(sale.isCredit)
+    }
+
+    @Test
+    fun testAmountFirstCreditCommand() {
+        val result = VoiceCommandParser.parse("500 udhar Ramesh")
+        assertTrue(result is ParsedIntent.RecordSale)
+        val sale = result as ParsedIntent.RecordSale
+        assertEquals("Ramesh", sale.customerName)
+        assertEquals(500.0, sale.amount ?: 0.0, 0.001)
+        assertTrue(sale.isCredit)
+    }
+
+    @Test
+    fun testDevanagariDigitsInSov() {
+        val result = VoiceCommandParser.parse("५०० rupay ki chini Ramesh ke khate mein likh do")
+        assertTrue(result is ParsedIntent.RecordSale)
+        val sale = result as ParsedIntent.RecordSale
+        assertEquals("Ramesh", sale.customerName)
+        assertEquals("chini", sale.productName)
+        assertEquals(500.0, sale.amount ?: 0.0, 0.001)
+        assertTrue(sale.isCredit)
+    }
 }
+

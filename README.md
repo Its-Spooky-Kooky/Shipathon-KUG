@@ -77,7 +77,7 @@ Shipathon-KUG/
 │       └── test/                               # Comprehensive JUnit test suite
 │           └── java/com/eta/assistant/
 │               ├── BusinessLogicUnitTest.kt    # Tests for currency rounding, UPI URI, ledger dues, and JSON backup integrity
-│               └── VoiceCommandParserTest.kt   # Tests for Hindi SOV commands, customer-first credit, and colloquial numbers
+│               └── VoiceCommandParserTest.kt   # Tests for Hindi, Tamil, Bengali SOV commands, Indic numerals, customer credit & colloquial numbers
 ├── landing-page/
 │   └── public/
 │       ├── index.html                          # High-conversion interactive landing page + offline QR code generator

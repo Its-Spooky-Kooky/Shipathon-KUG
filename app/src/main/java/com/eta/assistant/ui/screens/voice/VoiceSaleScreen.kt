@@ -285,7 +285,7 @@ fun VoiceSaleScreen(
 
                     val summary = when (val intent = state.parsedIntent) {
                         is ParsedIntent.RecordSale -> {
-                            val creditSuffix = if (intent.isCredit) " (Payment: CREDIT)" else ""
+                            val creditSuffix = if (intent.isCredit) " " + com.eta.assistant.core.util.LocaleStrings.get("payment_credit_tag", state.languageCode) else ""
                             "Record sale of ${intent.quantity.toInt()} ${intent.productName} for ${intent.customerName} (${intent.amount?.let { "₹$it" } ?: "Inventory Price"})$creditSuffix"
                         }
                         is ParsedIntent.AddStock -> "Add ${intent.quantity.toInt()} ${intent.productName} to inventory stock"
