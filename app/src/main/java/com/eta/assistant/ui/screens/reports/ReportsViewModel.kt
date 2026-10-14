@@ -32,7 +32,8 @@ data class ReportsUiState(
     val topSellingItems: List<TopProductSummary> = emptyList(),
     val recentExpenses: List<ExpenseEntity> = emptyList(),
     val currencySymbol: String = "₹",
-    val salesTrendBars: List<Float> = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 1.0f)
+    val salesTrendBars: List<Float> = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 1.0f),
+    val languageCode: String = "en"
 )
 
 private data class ReportFinancials(
@@ -77,7 +78,8 @@ class ReportsViewModel(
                 transactionCount = fin.txCount,
                 topSellingItems = topItems,
                 recentExpenses = expenses.take(10),
-                currencySymbol = prefs.currencySymbol
+                currencySymbol = prefs.currencySymbol,
+                languageCode = prefs.languageCode
             )
         }
     }.stateIn(

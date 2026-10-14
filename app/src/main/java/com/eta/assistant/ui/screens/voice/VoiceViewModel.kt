@@ -26,7 +26,8 @@ data class VoiceUiState(
     val spokenText: String = "",
     val parsedIntent: ParsedIntent? = null,
     val statusMessage: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val languageCode: String = "en"
 )
 
 class VoiceViewModel(
@@ -42,6 +43,11 @@ class VoiceViewModel(
 
     init {
         initSpeechRecognizer()
+        viewModelScope.launch {
+            preferencesRepository.userPreferencesFlow.collect { prefs ->
+                _uiState.value = _uiState.value.copy(languageCode = prefs.languageCode)
+            }
+        }
     }
 
     private fun initSpeechRecognizer() {

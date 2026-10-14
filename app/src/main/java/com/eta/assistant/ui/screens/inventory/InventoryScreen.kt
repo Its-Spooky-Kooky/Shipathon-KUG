@@ -84,7 +84,7 @@ fun InventoryScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Inventory",
+                text = com.eta.assistant.core.util.LocaleStrings.get("inventory", state.languageCode),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -100,7 +100,7 @@ fun InventoryScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add Product",
+                    contentDescription = com.eta.assistant.core.util.LocaleStrings.get("add_product", state.languageCode),
                     tint = Color.White
                 )
             }
@@ -113,7 +113,7 @@ fun InventoryScreen(
             value = state.searchQuery,
             onValueChange = viewModel::onSearchQueryChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search products...") },
+            placeholder = { Text(com.eta.assistant.core.util.LocaleStrings.get("search_products_hint", state.languageCode)) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
@@ -134,10 +134,18 @@ fun InventoryScreen(
         ) {
             items(categories) { cat ->
                 val isSelected = state.selectedCategory == cat
+                val catLabel = when (cat.lowercase()) {
+                    "all" -> com.eta.assistant.core.util.LocaleStrings.get("category_all", state.languageCode)
+                    "groceries" -> com.eta.assistant.core.util.LocaleStrings.get("cat_groceries", state.languageCode)
+                    "snacks" -> com.eta.assistant.core.util.LocaleStrings.get("cat_snacks", state.languageCode)
+                    "beverages" -> com.eta.assistant.core.util.LocaleStrings.get("cat_beverages", state.languageCode)
+                    "others" -> com.eta.assistant.core.util.LocaleStrings.get("cat_others", state.languageCode)
+                    else -> cat
+                }
                 FilterChip(
                     selected = isSelected,
                     onClick = { viewModel.onCategorySelect(cat) },
-                    label = { Text(cat) },
+                    label = { Text(catLabel) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = OrangePrimary,
                         selectedLabelColor = Color.White
@@ -166,7 +174,7 @@ fun InventoryScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "No products found",
+                        text = com.eta.assistant.core.util.LocaleStrings.get("no_products_found", state.languageCode),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -26,7 +26,8 @@ data class SalesUiState(
     val paymentMode: String = "CASH", // CASH, UPI, CREDIT
     val currencySymbol: String = "₹",
     val searchQuery: String = "",
-    val error: String? = null
+    val error: String? = null,
+    val languageCode: String = "en"
 ) {
     val totalAmount: Double get() = cartItems.sumOf { it.subtotal }
 }
@@ -82,7 +83,8 @@ class SalesViewModel(
             paymentMode = form.mode,
             currencySymbol = prefs.currencySymbol,
             searchQuery = filteredPair.second,
-            error = form.error
+            error = form.error,
+            languageCode = prefs.languageCode
         )
     }.stateIn(
         scope = viewModelScope,

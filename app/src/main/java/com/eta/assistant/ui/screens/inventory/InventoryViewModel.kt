@@ -18,7 +18,8 @@ data class InventoryUiState(
     val searchQuery: String = "",
     val selectedCategory: String = "All",
     val currencySymbol: String = "₹",
-    val defaultThreshold: Double = 5.0
+    val defaultThreshold: Double = 5.0,
+    val languageCode: String = "en"
 )
 
 class InventoryViewModel(
@@ -45,7 +46,8 @@ class InventoryViewModel(
             searchQuery = query,
             selectedCategory = category,
             currencySymbol = prefs.currencySymbol,
-            defaultThreshold = prefs.defaultLowStockThreshold
+            defaultThreshold = prefs.defaultLowStockThreshold,
+            languageCode = prefs.languageCode
         )
     }.stateIn(
         scope = viewModelScope,

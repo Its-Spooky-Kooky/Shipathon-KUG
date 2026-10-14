@@ -167,12 +167,12 @@ fun SaleConfirmationScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Customer",
+                                    text = com.eta.assistant.core.util.LocaleStrings.get("customer_prefix", state.languageCode),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = state.selectedCustomer?.name ?: "Walk-in Customer",
+                                    text = state.selectedCustomer?.name ?: com.eta.assistant.core.util.LocaleStrings.get("walk_in_customer", state.languageCode),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -191,7 +191,7 @@ fun SaleConfirmationScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Payment Mode",
+                                    text = com.eta.assistant.core.util.LocaleStrings.get("payment_mode", state.languageCode),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -200,10 +200,16 @@ fun SaleConfirmationScreen(
                                     modifier = Modifier.padding(top = 4.dp)
                                 ) {
                                     listOf("CASH", "UPI", "CREDIT").forEach { mode ->
+                                        val chipLabel = when (mode) {
+                                            "CASH" -> com.eta.assistant.core.util.LocaleStrings.get("payment_cash", state.languageCode)
+                                            "UPI" -> com.eta.assistant.core.util.LocaleStrings.get("payment_upi", state.languageCode)
+                                            "CREDIT" -> com.eta.assistant.core.util.LocaleStrings.get("payment_credit", state.languageCode)
+                                            else -> mode
+                                        }
                                         FilterChip(
                                             selected = state.paymentMode == mode,
                                             onClick = { viewModel.setPaymentMode(mode) },
-                                            label = { Text(if (mode == "CREDIT") "Credit (Udhar)" else mode) },
+                                            label = { Text(chipLabel) },
                                             colors = FilterChipDefaults.filterChipColors(
                                                 selectedContainerColor = OrangePrimary,
                                                 selectedLabelColor = Color.White
@@ -225,7 +231,7 @@ fun SaleConfirmationScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Date & Time",
+                                    text = com.eta.assistant.core.util.LocaleStrings.get("date_and_time", state.languageCode),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -265,7 +271,7 @@ fun SaleConfirmationScreen(
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
-                    text = "Save Sale",
+                    text = com.eta.assistant.core.util.LocaleStrings.get("confirm_sale", state.languageCode),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )

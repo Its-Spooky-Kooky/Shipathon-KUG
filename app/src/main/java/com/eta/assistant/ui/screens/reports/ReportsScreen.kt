@@ -1,6 +1,7 @@
 package com.eta.assistant.ui.screens.reports
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,7 +77,7 @@ fun ReportsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Reports",
+                text = com.eta.assistant.core.util.LocaleStrings.get("reports", state.languageCode),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -89,7 +90,7 @@ fun ReportsScreen(
             ) {
                 Icon(androidx.compose.material.icons.Icons.Default.Add, contentDescription = "Add Expense", modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Add Expense", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(com.eta.assistant.core.util.LocaleStrings.get("add_expense", state.languageCode), fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
         }
 
@@ -102,10 +103,15 @@ fun ReportsScreen(
         ) {
             ReportPeriod.values().forEach { period ->
                 val isSelected = state.selectedPeriod == period
+                val periodLabel = when (period) {
+                    ReportPeriod.TODAY -> com.eta.assistant.core.util.LocaleStrings.get("period_today", state.languageCode)
+                    ReportPeriod.SEVEN_DAYS -> com.eta.assistant.core.util.LocaleStrings.get("period_7days", state.languageCode)
+                    ReportPeriod.THIRTY_DAYS -> com.eta.assistant.core.util.LocaleStrings.get("period_30days", state.languageCode)
+                }
                 FilterChip(
                     selected = isSelected,
                     onClick = { viewModel.selectPeriod(period) },
-                    label = { Text(period.title) },
+                    label = { Text(periodLabel) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = OrangePrimary,
                         selectedLabelColor = Color.White
@@ -137,7 +143,7 @@ fun ReportsScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "Sales",
+                                    text = com.eta.assistant.core.util.LocaleStrings.get("sales_card_title", state.languageCode),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -208,7 +214,7 @@ fun ReportsScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Expenses",
+                                text = com.eta.assistant.core.util.LocaleStrings.get("expenses", state.languageCode),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -224,7 +230,8 @@ fun ReportsScreen(
 
                     Card(
                         modifier = Modifier
-                            .weight(1f),
+                            .weight(1f)
+                            .clickable { onViewDuesClick() },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -236,7 +243,7 @@ fun ReportsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Total Dues",
+                                    text = com.eta.assistant.core.util.LocaleStrings.get("total_dues", state.languageCode),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -263,7 +270,7 @@ fun ReportsScreen(
             item {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Top Selling Items",
+                    text = com.eta.assistant.core.util.LocaleStrings.get("top_selling_items", state.languageCode),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -278,13 +285,13 @@ fun ReportsScreen(
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Box(
-                            modifier = Modifier
+                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(20.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No sales in selected period",
+                                text = com.eta.assistant.core.util.LocaleStrings.get("no_sales_period", state.languageCode),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -352,7 +359,7 @@ fun ReportsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Recent Expenses",
+                        text = com.eta.assistant.core.util.LocaleStrings.get("recent_expenses", state.languageCode),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground

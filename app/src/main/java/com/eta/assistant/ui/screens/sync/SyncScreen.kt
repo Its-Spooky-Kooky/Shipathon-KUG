@@ -109,7 +109,7 @@ fun SyncScreen(
             }
 
             Text(
-                text = "Offline & Cloud Sync",
+                text = com.eta.assistant.core.util.LocaleStrings.get("offline_sync_title", prefs?.languageCode ?: "en"),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -139,7 +139,7 @@ fun SyncScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = if (isSyncing) "Syncing..." else "Local-First Active",
+            text = if (isSyncing) com.eta.assistant.core.util.LocaleStrings.get("syncing", prefs?.languageCode ?: "en") else com.eta.assistant.core.util.LocaleStrings.get("local_first_active", prefs?.languageCode ?: "en"),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -148,7 +148,7 @@ fun SyncScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Your business records are safely stored locally in Room SQLite. Offline operations are 100% functional.",
+            text = com.eta.assistant.core.util.LocaleStrings.get("offline_sync_desc", prefs?.languageCode ?: "en"),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp),

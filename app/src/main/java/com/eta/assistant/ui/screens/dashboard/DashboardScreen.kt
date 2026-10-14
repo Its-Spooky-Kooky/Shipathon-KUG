@@ -257,7 +257,7 @@ fun DashboardScreen(
                     QuickActionCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.PointOfSale,
-                        title = "New Sale (Manual)",
+                        title = com.eta.assistant.core.util.LocaleStrings.get("new_sale_manual", state.languageCode),
                         isHighlighted = false,
                         onClick = onRecordSaleManual
                     )
@@ -329,7 +329,7 @@ fun DashboardScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No sales recorded yet. Tap Record Sale to start!",
+                            text = com.eta.assistant.core.util.LocaleStrings.get("no_sales_empty", state.languageCode),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -117,7 +117,7 @@ fun VoiceSaleScreen(
             }
 
             Text(
-                text = "Record Sale (Voice)",
+                text = com.eta.assistant.core.util.LocaleStrings.get("voice_billing", state.languageCode),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -179,14 +179,14 @@ fun VoiceSaleScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = if (state.isListening) "Listening... speak now" else "Tap to speak",
+            text = if (state.isListening) com.eta.assistant.core.util.LocaleStrings.get("listening", state.languageCode) else com.eta.assistant.core.util.LocaleStrings.get("tap_to_speak", state.languageCode),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
 
         Text(
-            text = "e.g. \"Record a ₹500 sale for Ravi\"",
+            text = com.eta.assistant.core.util.LocaleStrings.get("voice_example_prompt", state.languageCode),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -197,7 +197,7 @@ fun VoiceSaleScreen(
         OutlinedTextField(
             value = typedCommand,
             onValueChange = { typedCommand = it },
-            placeholder = { Text("Or type command here...") },
+            placeholder = { Text(com.eta.assistant.core.util.LocaleStrings.get("type_command_hint", state.languageCode)) },
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
                 IconButton(
@@ -217,6 +217,33 @@ fun VoiceSaleScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Quick noisy counter tap buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf("₹500 Ramesh", "Add 5kg Rice", "Show Dues").forEach { quickQuery ->
+                androidx.compose.material3.AssistChip(
+                    onClick = {
+                        val fullCommand = when (quickQuery) {
+                            "₹500 Ramesh" -> "Record a ₹500 sale for Ramesh"
+                            "Add 5kg Rice" -> "Add 5kg rice to stock"
+                            else -> "Show my dues"
+                        }
+                        viewModel.processCommand(fullCommand)
+                    },
+                    label = { Text(quickQuery, fontSize = 12.sp) },
+                    colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                        containerColor = OrangePrimaryContainer.copy(alpha = 0.5f),
+                        labelColor = OrangePrimary
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         OutlinedButton(
             onClick = onNavigateToManualSale,
             modifier = Modifier.fillMaxWidth(),
@@ -230,7 +257,7 @@ fun VoiceSaleScreen(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Prefer manual entry? Open POS Cart",
+                text = com.eta.assistant.core.util.LocaleStrings.get("prefer_manual_cart", state.languageCode),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
@@ -248,7 +275,7 @@ fun VoiceSaleScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Parsed Action",
+                        text = com.eta.assistant.core.util.LocaleStrings.get("parsed_action", state.languageCode),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = OrangePrimary
@@ -288,7 +315,7 @@ fun VoiceSaleScreen(
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text(text = "Confirm & Execute Action", fontWeight = FontWeight.Bold)
+                        Text(text = com.eta.assistant.core.util.LocaleStrings.get("confirm_action", state.languageCode), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -313,7 +340,7 @@ fun VoiceSaleScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Recent Commands",
+                    text = com.eta.assistant.core.util.LocaleStrings.get("recent_commands", state.languageCode),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground

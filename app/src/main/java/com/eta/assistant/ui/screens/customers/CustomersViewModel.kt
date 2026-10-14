@@ -22,7 +22,8 @@ data class CustomersUiState(
     val customers: List<CustomerWithBalance> = emptyList(),
     val searchQuery: String = "",
     val currencySymbol: String = "₹",
-    val businessName: String = "My Store"
+    val businessName: String = "My Store",
+    val languageCode: String = "en"
 )
 
 class CustomersViewModel(
@@ -44,7 +45,8 @@ class CustomersViewModel(
             customers = filtered,
             searchQuery = query,
             currencySymbol = prefs.currencySymbol,
-            businessName = prefs.businessName
+            businessName = prefs.businessName,
+            languageCode = prefs.languageCode
         )
     }.stateIn(
         scope = viewModelScope,
@@ -83,7 +85,7 @@ class CustomersViewModel(
     fun getCustomerPayments(customerId: Long) = repository.getPaymentsForCustomer(customerId)
 
     fun sharePaymentReminder(context: Context, customerName: String, dueAmount: Double, currency: String, storeName: String) {
-        val message = "Hello $customerName, your pending balance at $storeName is $currency $dueAmount. Kindly settle at your earliest convenience. Thank you!"
+        val message = "Hello $customerName, your pending balance at $storeName is $currency ${String.format("%.2f", dueAmount)}. Kindly settle at your earliest convenience. Thank you!"
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_TEXT, message)
@@ -91,6 +93,23 @@ class CustomersViewModel(
         }
         val shareIntent = Intent.createChooser(sendIntent, "Send Payment Reminder")
         context.startActivity(shareIntent)
+    }
+
+    fun shareOnWhatsApp(context: Context, phone: String?, customerName: String, dueAmount: Double, currency: String, storeName: String) {
+        val message = "Hello $customerName, your pending balance at $storeName is $currency ${String.format("%.2f", dueAmount)}. Kindly settle at your earliest convenience. Thank you!"
+        try {
+            val cleanPhone = phone?.filter { it.isDigit() } ?: ""
+            val url = if (cleanPhone.isNotBlank()) {
+                val fullPhone = if (cleanPhone.length == 10) "91$cleanPhone" else cleanPhone
+                "https://wa.me/$fullPhone?text=${java.net.URLEncoder.encode(message, "UTF-8")}"
+            } else {
+                "https://api.whatsapp.com/send?text=${java.net.URLEncoder.encode(message, "UTF-8")}"
+            }
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            sharePaymentReminder(context, customerName, dueAmount, currency, storeName)
+        }
     }
 }
 

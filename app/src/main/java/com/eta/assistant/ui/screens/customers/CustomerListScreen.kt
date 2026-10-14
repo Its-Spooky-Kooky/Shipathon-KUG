@@ -73,7 +73,7 @@ fun CustomerListScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Customers",
+                text = com.eta.assistant.core.util.LocaleStrings.get("customers", state.languageCode),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -88,7 +88,7 @@ fun CustomerListScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add Customer",
+                    contentDescription = com.eta.assistant.core.util.LocaleStrings.get("add_customer", state.languageCode),
                     tint = Color.White
                 )
             }
@@ -100,7 +100,7 @@ fun CustomerListScreen(
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = viewModel::onSearchQueryChange,
-            placeholder = { Text("Search customer...") },
+            placeholder = { Text(com.eta.assistant.core.util.LocaleStrings.get("search_customers_hint", state.languageCode)) },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = {
                 Icon(
@@ -124,7 +124,7 @@ fun CustomerListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No customers found. Add your first customer!",
+                    text = com.eta.assistant.core.util.LocaleStrings.get("no_customers_found", state.languageCode),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -138,6 +138,7 @@ fun CustomerListScreen(
                     CustomerCard(
                         customer = customer,
                         currency = state.currencySymbol,
+                        lang = state.languageCode,
                         onClick = { onCustomerClick(customer.id) }
                     )
                 }
@@ -164,6 +165,7 @@ fun CustomerListScreen(
 private fun CustomerCard(
     customer: CustomerWithBalance,
     currency: String,
+    lang: String = "en",
     onClick: () -> Unit
 ) {
     Card(
@@ -208,8 +210,9 @@ private fun CustomerCard(
                     )
 
                     val hasDue = customer.totalDue > 0
+                    val dueSuffix = com.eta.assistant.core.util.LocaleStrings.get("due_label", lang)
                     Text(
-                        text = if (hasDue) "${CurrencyFormatter.format(customer.totalDue, currency)} due" else "${CurrencyFormatter.format(0.0, currency)} due",
+                        text = if (hasDue) "${CurrencyFormatter.format(customer.totalDue, currency)} $dueSuffix" else "${CurrencyFormatter.format(0.0, currency)} $dueSuffix",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color = if (hasDue) OrangePrimary else SuccessGreen

@@ -149,7 +149,7 @@ fun CustomerDetailScreen(
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text(
-                    text = "Total Due",
+                    text = com.eta.assistant.core.util.LocaleStrings.get("total_due", state.languageCode),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -167,7 +167,7 @@ fun CustomerDetailScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Action Buttons: Add Payment & Send Reminder
+        // Action Buttons: Add Payment & Send Reminder / WhatsApp
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -185,18 +185,29 @@ fun CustomerDetailScreen(
             ) {
                 Icon(Icons.Default.Add, "Add Payment", modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Add Payment", fontWeight = FontWeight.SemiBold)
+                Text(com.eta.assistant.core.util.LocaleStrings.get("add_payment", state.languageCode), fontWeight = FontWeight.SemiBold)
             }
 
             OutlinedButton(
                 onClick = {
-                    viewModel.sharePaymentReminder(
-                        context = context,
-                        customerName = customer?.name ?: "Customer",
-                        dueAmount = customer?.totalDue ?: 0.0,
-                        currency = state.currencySymbol,
-                        storeName = state.businessName
-                    )
+                    if (!customer?.phone.isNullOrBlank()) {
+                        viewModel.shareOnWhatsApp(
+                            context = context,
+                            phone = customer?.phone ?: "",
+                            customerName = customer?.name ?: "Customer",
+                            dueAmount = customer?.totalDue ?: 0.0,
+                            currency = state.currencySymbol,
+                            storeName = state.businessName
+                        )
+                    } else {
+                        viewModel.sharePaymentReminder(
+                            context = context,
+                            customerName = customer?.name ?: "Customer",
+                            dueAmount = customer?.totalDue ?: 0.0,
+                            currency = state.currencySymbol,
+                            storeName = state.businessName
+                        )
+                    }
                 },
                 modifier = Modifier
                     .weight(1f)
@@ -205,7 +216,11 @@ fun CustomerDetailScreen(
             ) {
                 Icon(Icons.Default.Share, "Share", modifier = Modifier.size(18.dp), tint = OrangePrimary)
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Send Reminder", color = OrangePrimary, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = if (!customer?.phone.isNullOrBlank()) com.eta.assistant.core.util.LocaleStrings.get("whatsapp_reminder", state.languageCode) else com.eta.assistant.core.util.LocaleStrings.get("send_reminder", state.languageCode),
+                    color = OrangePrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
 
@@ -213,7 +228,7 @@ fun CustomerDetailScreen(
 
         // Recent Transactions Section Header
         Text(
-            text = "Recent Transactions",
+            text = com.eta.assistant.core.util.LocaleStrings.get("recent_transactions", state.languageCode),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -228,7 +243,7 @@ fun CustomerDetailScreen(
             items(sales) { sale ->
                 TransactionRow(
                     isSale = true,
-                    title = "Sale",
+                    title = com.eta.assistant.core.util.LocaleStrings.get("sale_item", state.languageCode),
                     date = DateUtils.formatDate(sale.createdAt),
                     amount = CurrencyFormatter.format(sale.totalAmount, state.currencySymbol)
                 )

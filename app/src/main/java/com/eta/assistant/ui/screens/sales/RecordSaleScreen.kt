@@ -85,7 +85,7 @@ fun RecordSaleScreen(
             }
 
             Text(
-                text = "Record Sale",
+                text = com.eta.assistant.core.util.LocaleStrings.get("record_sale", state.languageCode),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -98,7 +98,7 @@ fun RecordSaleScreen(
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = viewModel::onSearchQueryChange,
-            placeholder = { Text("Search products to add...") },
+            placeholder = { Text(com.eta.assistant.core.util.LocaleStrings.get("search_products_hint", state.languageCode)) },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = {
                 Icon(
@@ -137,7 +137,7 @@ fun RecordSaleScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = state.selectedCustomer?.let { "Customer: ${it.name}" } ?: "Walk-in Customer",
+                        text = state.selectedCustomer?.let { "${com.eta.assistant.core.util.LocaleStrings.get("customer_prefix", state.languageCode)}: ${it.name}" } ?: com.eta.assistant.core.util.LocaleStrings.get("walk_in_customer", state.languageCode),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -145,7 +145,7 @@ fun RecordSaleScreen(
                 }
 
                 Text(
-                    text = if (showCustomerPicker) "Close" else "Change",
+                    text = if (showCustomerPicker) com.eta.assistant.core.util.LocaleStrings.get("close_picker", state.languageCode) else com.eta.assistant.core.util.LocaleStrings.get("change_customer", state.languageCode),
                     style = MaterialTheme.typography.labelMedium,
                     color = OrangePrimary,
                     fontWeight = FontWeight.SemiBold
@@ -162,7 +162,7 @@ fun RecordSaleScreen(
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
                     Text(
-                        text = "Walk-in (No account)",
+                        text = com.eta.assistant.core.util.LocaleStrings.get("walk_in_customer", state.languageCode),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
@@ -176,7 +176,7 @@ fun RecordSaleScreen(
                     )
                     state.customers.forEach { customer ->
                         Text(
-                            text = "${customer.name} (Due: ${CurrencyFormatter.format(customer.totalDue, state.currencySymbol)})",
+                            text = "${customer.name} (${com.eta.assistant.core.util.LocaleStrings.get("due_label", state.languageCode)}: ${CurrencyFormatter.format(customer.totalDue, state.currencySymbol)})",
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
@@ -232,7 +232,7 @@ fun RecordSaleScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Total (${state.cartItems.size} items)",
+                            text = "${com.eta.assistant.core.util.LocaleStrings.get("total_amount", state.languageCode)} (${state.cartItems.size} ${com.eta.assistant.core.util.LocaleStrings.get("items_count", state.languageCode)})",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -259,7 +259,7 @@ fun RecordSaleScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "Review & Confirm Sale",
+                            text = com.eta.assistant.core.util.LocaleStrings.get("review_confirm", state.languageCode),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
                         )
